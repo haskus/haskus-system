@@ -93,6 +93,10 @@ instance Object PlaneID where
    getObjectType _ = ObjectPlane
    getObjectID     = unEntityID
 
+instance Object (BlobID Mode) where
+   getObjectType _ = ObjectBlob
+   getObjectID     = unEntityID
+
 -- | Get a string with object type and ID
 showObjectQualifiedID :: Object a => a -> String
 showObjectQualifiedID a = showObjectType (getObjectType a) ++ " " ++ show (getObjectID a)

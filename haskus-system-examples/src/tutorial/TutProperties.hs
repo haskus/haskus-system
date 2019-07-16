@@ -20,7 +20,7 @@ main = runSys' do
             forM_ mprops \props -> do
                writeStrLn term ("* " ++ showObjectQualifiedID o)
                forM_ props \prop ->
-                  writeStrLn term ("    " ++ showProperty prop)
+                  writeStrLn term ("    " ++ showProperty False prop)
 
       entities <- getEntities card
                      |> assertLogShowErrorE "Get entities"

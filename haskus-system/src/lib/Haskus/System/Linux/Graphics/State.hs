@@ -742,17 +742,18 @@ createHandleModeBlob hdl mode = do
 -------------------------------------------------------------------------------
 
 -- | Show property meta-data
-showPropertyMeta :: PropertyMeta -> String
-showPropertyMeta meta = showPropertyEx meta Nothing
+showPropertyMeta :: Bool -> PropertyMeta -> String
+showPropertyMeta showpid meta = showPropertyEx showpid meta Nothing
 
 -- | Display a property in a user readable way
-showProperty :: Property -> String
-showProperty (Property meta value) = showPropertyEx meta (Just value)
+showProperty :: Bool -> Property -> String
+showProperty showpid (Property meta value) = showPropertyEx showpid meta (Just value)
 
 -- | Display a property-meta in a user readable way (with or without value)
-showPropertyEx :: PropertyMeta -> Maybe Word64 -> String
-showPropertyEx meta mvalue = mconcat
+showPropertyEx :: Bool -> PropertyMeta -> Maybe Word64 -> String
+showPropertyEx showpid meta mvalue = mconcat
    [ if propertyImmutable meta then "val " else "var "
+   , if showpid then "{" ++ show (unEntityID (propertyID meta)) ++ "} " else ""
    , propertyName meta
    , case mvalue of
       Nothing  -> ""
@@ -917,17 +918,15 @@ getAllPropertyMeta hdl = go 1 Map.empty
             Just meta -> go (n+1) (Map.insert (EntityID n) meta m)
 
 -- | Set object properties atomically
-setAtomic :: MonadInIO m => Handle -> AtomicFlags -> Map ObjectID [RawProperty] -> Excepts AtomicErrors m ()
-setAtomic hdl flags propsmap = do
+setAtomic :: MonadInIO m => Handle -> AtomicFlags -> [(ObjectID, [RawProperty])] -> Excepts AtomicErrors m ()
+setAtomic hdl flags kvs = do
 
    let
-      kvs    = Map.assocs propsmap -- [(Obj,[(Prop,Val)])]
-      objs   = fmap fst    kvs     -- [Obj]
-      pvs    = fmap snd    kvs     -- [[RawProperty]]
-      nprops = fmap length pvs
-      props  = fmap rawPropertyID (concat pvs)     -- list of property ID
-      vals   = fmap rawPropertyValue  (concat pvs) -- list of values
-
+      objs   = fmap fst    kvs                     :: [Word32]
+      pvs    = fmap snd    kvs                     :: [[RawProperty]]
+      nprops = fmap (fromIntegral . length) pvs    :: [Word32]
+      props  = fmap rawPropertyID (concat pvs)     :: [PropertyID]
+      vals   = fmap rawPropertyValue  (concat pvs) :: [Word64]
 
    withArray objs $ \pobjs ->
       withArray nprops $ \pnprops ->
@@ -937,7 +936,7 @@ setAtomic hdl flags propsmap = do
                   toPtr = fromIntegral . ptrToWordPtr
                   s = StructAtomic
                      { atomFlags         = flags
-                     , atomCountObjects  = fromIntegral (length (Map.keys propsmap))
+                     , atomCountObjects  = fromIntegral (length objs)
                      , atomObjectsPtr    = toPtr pobjs
                      , atomCountPropsPtr = toPtr pnprops
                      , atomPropsPtr      = toPtr pprops

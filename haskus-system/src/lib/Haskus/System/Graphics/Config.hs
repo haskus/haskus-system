@@ -19,11 +19,10 @@ import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics
 import Haskus.Utils.Flow
-import Haskus.Utils.List
+import Haskus.Utils.List as List
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.FixedPoint
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Haskus.Memory.Ptr
 
@@ -44,15 +43,16 @@ data Command
    | CmdPlaneCustom                    PlaneID      RawProperty
    | CmdPlaneSource                    PlaneID      FrameID FP16_16 FP16_16 FP16_16 FP16_16
    | CmdPlanePosition                  PlaneID      Int32 Int32
+   | CmdPlaneSize                      PlaneID      Word32 Word32
+   | CmdPlaneSourcePosition            PlaneID      FP16_16 FP16_16
+   | CmdPlaneSourceSize                PlaneID      FP16_16 FP16_16
    | CmdPlaneTarget                    PlaneID      ControllerID Int32 Int32 Word32 Word32
    | CmdPlaneInFenceHandle             PlaneID      (Maybe Word32)
    deriving (Show)
 
-type PropMap = Map (ObjectID,PropertyID) Word64
-
--- | Insert a command in the map
-insertCommand :: GraphicCard -> PropMap -> Command -> PropMap
-insertCommand card m cmd = Map.union m propMap
+-- | Get raw property settings from a Command
+fromCommand :: GraphicCard -> Command -> [(ObjectID,PropertyID,Word64)]
+fromCommand card cmd = props
    where
       props = case cmd of
          CmdConnectorCustom cid raw ->
@@ -100,6 +100,18 @@ insertCommand card m cmd = Map.union m propMap
             [ (unEntityID pid, metaId "CRTC_X", fromIntegral x)
             , (unEntityID pid, metaId "CRTC_Y", fromIntegral y)
             ]
+         CmdPlaneSize pid w h ->
+            [ (unEntityID pid, metaId "CRTC_W", fromIntegral w)
+            , (unEntityID pid, metaId "CRTC_H", fromIntegral h)
+            ]
+         CmdPlaneSourcePosition pid x y ->
+            [ (unEntityID pid, metaId "SRC_X", fromIntegral <| getFixedPointBase x)
+            , (unEntityID pid, metaId "SRC_Y", fromIntegral <| getFixedPointBase y)
+            ]
+         CmdPlaneSourceSize pid w h ->
+            [ (unEntityID pid, metaId "SRC_W", fromIntegral <| getFixedPointBase w)
+            , (unEntityID pid, metaId "SRC_H", fromIntegral <| getFixedPointBase h)
+            ]
 
       fromMaybeValue :: forall a. Integral a => Maybe a -> Word64
       fromMaybeValue Nothing  = fromIntegral (-1 :: Int)
@@ -107,9 +119,7 @@ insertCommand card m cmd = Map.union m propMap
 
       fromBool False = 0
       fromBool True  = 1
-      propMap = props
-                  ||> (\(a,b,c) -> ((a,b),c))
-                  |> Map.fromList
+
       metaId n = propertyID (graphicCardMetaPropertiesByName card Map.! n)
 
 -- | Test the configuration or commit it
@@ -117,7 +127,8 @@ data CommitOrTest
    = TestOnly  -- ^ Test only
    | Commit    -- ^ Test and commit
 
--- | Asynchronous commit?
+-- | Commit during VBLANK interval (synchronous) or as-soon-as-possible
+-- (asynchronous, may not be supported)
 data AsyncMode
    = Synchronous   -- ^ Synchronous commit
    | Asynchronous  -- ^ Asynchronous commit (may not be supported)
@@ -132,18 +143,12 @@ data AllowModeSet
    | DisallowFullModeset   -- ^ Don't allow full mode-setting
 
 -- | Convert commands into Object property Map
-makePropertyMap :: GraphicCard -> [Command] -> CmdSet
-makePropertyMap card cmds = CmdSet props
-   where
-      -- properties:  (object id, property id) -> property value
-      -- (used to get unique property assignements)
-      propMap = foldl' (insertCommand card) Map.empty cmds
-
-      -- properties: object id -> (property id, property value)
-      props = propMap
-               |> Map.toList
-               ||> (\((objId,propId),val) -> (objId,[RawProperty propId val]))
-               |> Map.fromListWith (++)
+makePropertyMap :: GraphicCard -> [Command] -> [(ObjectID, [RawProperty])]
+makePropertyMap card cmds =
+   concatMap (fromCommand card) cmds
+      ||> (\(o,p,v) -> (o, [RawProperty p v]))
+      |> groupOn fst
+      ||> (\xs -> (fst (head xs), concat (fmap snd xs)))
 
 
 -- | Perform mode-setting
@@ -164,8 +169,4 @@ configureGraphics card testMode asyncMode modesetMode cmds = do
             DisallowFullModeset -> []
          ]
 
-   setAtomic (graphicCardHandle card) flags (unCmdSet (makePropertyMap card cmds))
-
-newtype CmdSet = CmdSet
-   { unCmdSet :: (Map ObjectID [RawProperty])
-   }
+   setAtomic (graphicCardHandle card) flags (makePropertyMap card cmds)

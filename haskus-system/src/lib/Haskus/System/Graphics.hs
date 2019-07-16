@@ -18,6 +18,7 @@ module Haskus.System.Graphics
    , InvalidCard (..)
    , loadGraphicCards
    , getDriverInfo
+   , enableDRMDebug
      -- * Entities
    , EntitiesIDs (..)
    , EntitiesMap (..)
@@ -31,6 +32,7 @@ module Haskus.System.Graphics
    , forEachConnectedDisplay
    , forEachConnectedDisplay_
    , dumpAllEntities
+   , getEncoders
    -- * Generic buffers and frames
    , GenericBuffer (..)
    , createGenericBuffer
@@ -75,6 +77,7 @@ import Haskus.Utils.Maybe
 import Haskus.Utils.STM
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.Bits
+import Haskus.System.System
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.FileSystem.ReadWrite
 
@@ -183,6 +186,11 @@ getDriverInfo :: MonadInIO m => GraphicCard -> Excepts '[ErrorCode] m DrmInfo
 getDriverInfo card = handleGetInfo (graphicCardHandle card)
 
 
+-- | Enable DRM debug (don't forget to pass the "debug" kernel parameter)
+enableDRMDebug :: (MonadSys m, MonadInIO m) => System -> m ()
+enableDRMDebug sys =
+   writeSysTextAttribute sys "module/drm/parameters/debug" "0x3f"
+
 -------------------------------------------------------------
 -- Entities
 -------------------------------------------------------------
@@ -205,6 +213,10 @@ getEntitiesMap :: MonadInIO m => GraphicCard -> Excepts '[InvalidCard] m Entitie
 getEntitiesMap card =
    getHandleEntitiesMap (graphicCardHandle card)
       |> catchE (\InvalidHandle -> failureE InvalidCardHandle)
+
+-- | Get encoders
+getEncoders :: MonadInIO m => GraphicCard -> Excepts '[InvalidHandle] m [Encoder]
+getEncoders card = getHandleEncoders (graphicCardHandle card)
 
 -- | Do something for each connected display (ignore errors)
 forEachConnectedDisplay ::
@@ -247,21 +259,23 @@ fromRawProperty card raw =
 
 -- | Show a raw property
 showRawProperty :: GraphicCard -> RawProperty -> String
-showRawProperty card raw = showProperty (fromRawProperty card raw)
+showRawProperty card raw = showProperty False (fromRawProperty card raw)
 
 -- | Show all entities and their properties
 dumpAllEntities :: GraphicCard -> Sys ()
 dumpAllEntities card = do
       let
-         showProps :: Object o => o -> Sys ()
+         showProps :: (Show o, Object o) => o -> Sys ()
          showProps o = do
             liftIO <| putStrLn ("* " ++ showObjectQualifiedID o)
+            -- liftIO <| putStrLn (" Details: " ++ show o)
             -- get properties of object o
             mprops <- runE (getObjectProperties card o)
             -- show them
-            forM_ mprops \props -> do
-               forM_ props \prop -> do
-                  liftIO <| putStrLn ("    " ++ showProperty prop)
+            liftIO <| case mprops of
+               VRight props -> forM_ props \prop -> do
+                                 putStrLn ("    " ++ showProperty False prop)
+               VLeft err    -> putStrLn ("    Can't get properties: " ++ show err)
 
       entities <- getEntities card
                      |> assertLogShowErrorE "Get entities"
@@ -270,6 +284,9 @@ dumpAllEntities card = do
       mapM_ showProps (entitiesControllers entities)
       mapM_ showProps (entitiesPlanes entities)
       mapM_ showProps (entitiesFrames entities)
+      runE (getEncoders card) >>= \case
+         VRight encs -> mapM_ showProps encs
+         VLeft _     -> pure ()
 
 -------------------------------------------------------------
 -- Frames
