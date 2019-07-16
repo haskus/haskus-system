@@ -1,6 +1,6 @@
 linux:
    source: tarball
-   version: "5.1.15"
+   version: "5.2.1"
    options:
       enable:
          - CONFIG_DRM_BOCHS
@@ -25,4 +25,4 @@ ramdisk:
 qemu:
    profile: default
    options: ""
-   kernel-args: "drm.debug=0xf"
+   kernel-args: ""
