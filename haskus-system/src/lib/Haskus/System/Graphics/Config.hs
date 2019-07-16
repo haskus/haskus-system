@@ -1,21 +1,41 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Mode-setting configuration
 module Haskus.System.Graphics.Config
-   ( Command (..)
-   , configureGraphics
+   ( configureGraphics
    , CommitOrTest (..)
    , AsyncMode (..)
    , AllowModeSet (..)
-   , makePropertyMap
+   -- * Config monad
+   , getConfigCard
+   , Config (..)
+   , setConnectorSource
+   , setPlaneTarget
+   , setProperty
+   , setRawProperty
+   , setPlaneSourcePosition
+   , setPlaneSourceSize
+   , setPlanePosition
+   , setPlaneSize
+   , setPlaneSource
+   , enableController
+   , enableVariableRefreshRate
+   , setOutFencePtr
+   , setInFenceHandle
+   , setMode
+   , lookupPropertyID
+   , getPropertyID
    )
 where
 
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.State
+import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Graphics
 import Haskus.Utils.Flow
@@ -23,104 +43,150 @@ import Haskus.Utils.List as List
 import Haskus.Format.Binary.Word
 import Haskus.Format.Binary.FixedPoint
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import qualified Data.Map.Strict as Map
 import Haskus.Memory.Ptr
 
--- | Configuration command
+import qualified Data.Map.Strict as Map
+import Data.Map.Strict (Map)
+import Control.Monad.Trans.State.Strict
+
+-- | Config monad state
+data ConfigState = ConfigState
+   { cfgCard       :: GraphicCard                      -- ^ Graphic card (stored for convenience)
+   , cfgProperties :: Map (ObjectID,PropertyID) Word64 -- ^ Properties to set
+   }
+
+-- | Configuration monad
 --
--- Configuration commands are only used to perform mode-setting (connecting
--- entities, setting properties). They don't allocate any resource (Frame,
--- FrameBuffer, etc.). This is left for a calling function which would allocate
--- these resources beforehand.
-data Command
-   = CmdConnectorCustom                ConnectorID  RawProperty
-   | CmdConnectorController            ConnectorID  ControllerID
-   | CmdControllerCustom               ControllerID RawProperty
-   | CmdControllerActive               ControllerID Bool
-   | CmdControllerMode                 ControllerID (BlobID Mode)
-   | CmdControllerVariableRefreshRate  ControllerID Bool
-   | CmdControllerOutFencePtr          ControllerID RawPtr
-   | CmdPlaneCustom                    PlaneID      RawProperty
-   | CmdPlaneSource                    PlaneID      FrameID FP16_16 FP16_16 FP16_16 FP16_16
-   | CmdPlanePosition                  PlaneID      Int32 Int32
-   | CmdPlaneSize                      PlaneID      Word32 Word32
-   | CmdPlaneSourcePosition            PlaneID      FP16_16 FP16_16
-   | CmdPlaneSourceSize                PlaneID      FP16_16 FP16_16
-   | CmdPlaneTarget                    PlaneID      ControllerID Int32 Int32 Word32 Word32
-   | CmdPlaneInFenceHandle             PlaneID      (Maybe Word32)
-   deriving (Show)
+-- Commands are only used to perform mode-setting (connecting entities, setting
+-- properties). They don't allocate any resource (Frame, FrameBuffer, Mode, etc.).
+-- This is left for a calling function which should allocate these resources
+-- beforehand.
+newtype Config a = Config (State ConfigState a) deriving (Functor,Applicative,Monad)
 
--- | Get raw property settings from a Command
-fromCommand :: GraphicCard -> Command -> [(ObjectID,PropertyID,Word64)]
-fromCommand card cmd = props
-   where
-      props = case cmd of
-         CmdConnectorCustom cid raw ->
-            [ (unEntityID cid,rawPropertyID raw,rawPropertyValue raw)
-            ]
-         CmdControllerCustom cid raw ->
-            [ (unEntityID cid,rawPropertyID raw,rawPropertyValue raw)
-            ]
-         CmdPlaneCustom pid raw ->
-            [ (unEntityID pid,rawPropertyID raw,rawPropertyValue raw)
-            ]
-         CmdConnectorController cnid ctid ->
-            [ (unEntityID cnid, metaId "CRTC_ID", fromIntegral (unEntityID ctid))
-            ]
-         CmdControllerActive cid b ->
-            [ (unEntityID cid, metaId "ACTIVE", fromBool b)
-            ]
-         CmdControllerVariableRefreshRate cid b ->
-            [ (unEntityID cid, metaId "VRR_ENABLED", fromBool b)
-            ]
-         CmdControllerMode cid mid ->
-            [ (unEntityID cid, metaId "MODE_ID", fromIntegral (unEntityID mid))
-            ]
-         CmdPlaneSource pid fid x y w h ->
-            [ (unEntityID pid, metaId "FB_ID", fromIntegral <| unEntityID fid)
-            , (unEntityID pid, metaId "SRC_X", fromIntegral <| getFixedPointBase x)
-            , (unEntityID pid, metaId "SRC_Y", fromIntegral <| getFixedPointBase y)
-            , (unEntityID pid, metaId "SRC_W", fromIntegral <| getFixedPointBase w)
-            , (unEntityID pid, metaId "SRC_H", fromIntegral <| getFixedPointBase h)
-            ]
-         CmdPlaneTarget pid cid x y w h ->
-            [ (unEntityID pid, metaId "CRTC_ID", fromIntegral (unEntityID cid))
-            , (unEntityID pid, metaId "CRTC_X", fromIntegral x)
-            , (unEntityID pid, metaId "CRTC_Y", fromIntegral y)
-            , (unEntityID pid, metaId "CRTC_W", fromIntegral w)
-            , (unEntityID pid, metaId "CRTC_H", fromIntegral h)
-            ]
-         CmdControllerOutFencePtr cid ptr ->
-            [ (unEntityID cid, metaId "OUT_FENCE_PTR", fromIntegral (ptrToWordPtr ptr))
-            ]
-         CmdPlaneInFenceHandle pid mhdl ->
-            [ (unEntityID pid, metaId "IN_FENCE_FD", fromMaybeValue mhdl)
-            ]
-         CmdPlanePosition pid x y ->
-            [ (unEntityID pid, metaId "CRTC_X", fromIntegral x)
-            , (unEntityID pid, metaId "CRTC_Y", fromIntegral y)
-            ]
-         CmdPlaneSize pid w h ->
-            [ (unEntityID pid, metaId "CRTC_W", fromIntegral w)
-            , (unEntityID pid, metaId "CRTC_H", fromIntegral h)
-            ]
-         CmdPlaneSourcePosition pid x y ->
-            [ (unEntityID pid, metaId "SRC_X", fromIntegral <| getFixedPointBase x)
-            , (unEntityID pid, metaId "SRC_Y", fromIntegral <| getFixedPointBase y)
-            ]
-         CmdPlaneSourceSize pid w h ->
-            [ (unEntityID pid, metaId "SRC_W", fromIntegral <| getFixedPointBase w)
-            , (unEntityID pid, metaId "SRC_H", fromIntegral <| getFixedPointBase h)
-            ]
+emptyConfigState :: GraphicCard -> ConfigState
+emptyConfigState card = ConfigState card Map.empty
 
-      fromMaybeValue :: forall a. Integral a => Maybe a -> Word64
-      fromMaybeValue Nothing  = fromIntegral (-1 :: Int)
-      fromMaybeValue (Just x) = fromIntegral x
+-- | Get config properties
+configProperties :: GraphicCard -> Config a -> Map (ObjectID,PropertyID) Word64
+configProperties card (Config s) = cfgProperties (execState s (emptyConfigState card))
 
-      fromBool False = 0
-      fromBool True  = 1
+-- | Retrieve the graphic card
+getConfigCard :: Config GraphicCard
+getConfigCard = Config (state \s -> (cfgCard s, s))
 
-      metaId n = propertyID (graphicCardMetaPropertiesByName card Map.! n)
+-- | Set a property
+setProperty :: ObjectID -> PropertyID -> Word64 -> Config ()
+setProperty objid pid val = Config <| state \s ->
+   ( ()
+   , s { cfgProperties = Map.insert (objid,pid) val (cfgProperties s) }
+   )
+
+-- | Set object property
+setObjectProperty :: Object o => o -> PropertyID -> Word64 -> Config ()
+setObjectProperty o pid val = setProperty (getObjectID o) pid val
+
+-- | Get a property ID by name
+--
+-- Fail if missing
+getPropertyID :: String -> Config PropertyID
+getPropertyID n = do
+   card <- getConfigCard
+   pure (propertyID (graphicCardMetaPropertiesByName card Map.! n))
+
+-- | Get a property ID by name
+lookupPropertyID :: String -> Config (Maybe PropertyID)
+lookupPropertyID n = do
+   card <- getConfigCard
+   pure (propertyID <|| Map.lookup n (graphicCardMetaPropertiesByName card))
+
+-- | Set a raw property
+setRawProperty :: Object o => o -> RawProperty -> Config ()
+setRawProperty o p = setObjectProperty o (rawPropertyID p) (rawPropertyValue p)
+
+-- | Link a connector to a controller
+setConnectorSource :: (IsConnector cn, IsController ct) => cn -> ct -> Config ()
+setConnectorSource cn ct = do
+   pid <- getPropertyID "CRTC_ID"
+   setObjectProperty (getConnectorID cn) pid (fromIntegral (unEntityID (getControllerID ct)))
+
+-- | Link a plane to a controller
+setPlaneTarget :: (IsPlane p, IsController c) => p -> c -> Config ()
+setPlaneTarget p c = do
+   pid <- getPropertyID "CRTC_ID"
+   setObjectProperty (getPlaneID p) pid (fromIntegral (unEntityID (getControllerID c)))
+
+-- | Set Plane source position
+setPlaneSourcePosition :: IsPlane p => p -> FP16_16 -> FP16_16 -> Config ()
+setPlaneSourcePosition p x y = do
+   srcX <- getPropertyID "SRC_X"
+   srcY <- getPropertyID "SRC_Y"
+   setObjectProperty (getPlaneID p) srcX (fromIntegral <| getFixedPointBase x)
+   setObjectProperty (getPlaneID p) srcY (fromIntegral <| getFixedPointBase y)
+
+-- | Set Plane source size
+setPlaneSourceSize :: IsPlane p => p -> FP16_16 -> FP16_16 -> Config ()
+setPlaneSourceSize p w h = do
+   srcW <- getPropertyID "SRC_W"
+   srcH <- getPropertyID "SRC_H"
+   setObjectProperty (getPlaneID p) srcW (fromIntegral <| getFixedPointBase w)
+   setObjectProperty (getPlaneID p) srcH (fromIntegral <| getFixedPointBase h)
+
+-- | Set Plane position
+setPlanePosition :: (IsPlane p) => p -> Int32 -> Int32 -> Config ()
+setPlanePosition p x y = do
+   srcX <- getPropertyID "CRTC_X"
+   srcY <- getPropertyID "CRTC_Y"
+   setObjectProperty (getPlaneID p) srcX (fromIntegral x)
+   setObjectProperty (getPlaneID p) srcY (fromIntegral y)
+
+-- | Set Plane size
+setPlaneSize :: (IsPlane p) => p -> Word32 -> Word32 -> Config ()
+setPlaneSize p w h = do
+   srcW <- getPropertyID "CRTC_W"
+   srcH <- getPropertyID "CRTC_H"
+   setObjectProperty (getPlaneID p) srcW (fromIntegral w)
+   setObjectProperty (getPlaneID p) srcH (fromIntegral h)
+
+-- | Set Plane source
+setPlaneSource :: (IsPlane p, IsFrame f) => p -> f -> Config ()
+setPlaneSource p f = do
+   fbid <- getPropertyID "FB_ID"
+   setObjectProperty (getPlaneID p) fbid (fromIntegral <| unEntityID (getFrameID f))
+
+-- | Enable or disable a controller
+enableController :: (IsController c) => c -> Bool -> Config ()
+enableController c b = do
+   act <- getPropertyID "ACTIVE"
+   setObjectProperty (getControllerID c) act (if b then 1 else 0)
+
+-- | Enable or disable variable refresh rate
+enableVariableRefreshRate :: IsController c => c -> Bool -> Config ()
+enableVariableRefreshRate c b = do
+   prop <- getPropertyID "VRR_ENABLED"
+   setObjectProperty (getControllerID c) prop (if b then 1 else 0)
+
+-- | Set out fence barrier ptr
+setOutFencePtr :: IsController c => c -> RawPtr -> Config ()
+setOutFencePtr c ptr = do
+   prop <- getPropertyID "OUT_FENCE_PTR"
+   setObjectProperty (getControllerID c) prop (fromIntegral (ptrToWordPtr ptr))
+
+-- | Set in fence handle (FD)
+--
+-- Use Nothing to disable
+setInFenceHandle :: IsPlane p => p -> Maybe Word32 -> Config ()
+setInFenceHandle p mhdl = do
+   prop <- getPropertyID "IN_FENCE_FD"
+   setObjectProperty (getPlaneID p) prop
+      case mhdl of
+         Nothing -> fromIntegral (-1 :: Int)
+         Just x  -> fromIntegral x
+
+-- | Set display mode
+setMode :: IsController c => c -> BlobID Mode -> Config ()
+setMode c mid = do
+   prop <- getPropertyID "MODE_ID"
+   setObjectProperty (getControllerID c) prop (fromIntegral (unEntityID mid))
 
 -- | Test the configuration or commit it
 data CommitOrTest
@@ -142,20 +208,11 @@ data AllowModeSet
    = AllowFullModeset      -- ^ Allow full mode-setting
    | DisallowFullModeset   -- ^ Don't allow full mode-setting
 
--- | Convert commands into Object property Map
-makePropertyMap :: GraphicCard -> [Command] -> [(ObjectID, [RawProperty])]
-makePropertyMap card cmds =
-   concatMap (fromCommand card) cmds
-      ||> (\(o,p,v) -> (o, [RawProperty p v]))
-      |> groupOn fst
-      ||> (\xs -> (fst (head xs), concat (fmap snd xs)))
-
-
 -- | Perform mode-setting
 --
 -- We use the "atomic" API which should become the standard
-configureGraphics :: MonadInIO m => GraphicCard -> CommitOrTest -> AsyncMode -> AllowModeSet -> [Command] -> Excepts AtomicErrors m ()
-configureGraphics card testMode asyncMode modesetMode cmds = do
+configureGraphics :: MonadInIO m => GraphicCard -> CommitOrTest -> AsyncMode -> AllowModeSet -> Config a -> Excepts AtomicErrors m ()
+configureGraphics card testMode asyncMode modesetMode cfg = do
    let
       !flags = BitSet.fromList <| concat <|
          [ case testMode of
@@ -169,4 +226,10 @@ configureGraphics card testMode asyncMode modesetMode cmds = do
             DisallowFullModeset -> []
          ]
 
-   setAtomic (graphicCardHandle card) flags (makePropertyMap card cmds)
+      props = configProperties card cfg
+               |> Map.assocs
+               ||> (\((o,p),v) -> (o, [RawProperty p v]))
+               |> groupOn fst -- group properties by object
+               ||> (\xs -> (fst (head xs), concat (fmap snd xs)))
+
+   setAtomic (graphicCardHandle card) flags props

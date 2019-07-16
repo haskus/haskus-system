@@ -6,6 +6,9 @@ import Haskus.System
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Graphics.Config
+import Haskus.Format.Binary.Storable
+import Haskus.Format.Binary.Word
+import Haskus.Format.Binary.Bits
 
 main :: IO ()
 main = runSys' do
@@ -20,6 +23,10 @@ main = runSys' do
             pixelFormat = makePixelFormat XRGB8888 LittleEndian
 
          frame <- createGenericFullScreenFrame card mode pixelFormat 0
+          -- fill the frame
+         forEachGenericFramePixel frame 0 \x y ptr -> do
+            let col = 0x310000 + (x .&. 0xFF) `shiftL` 8 + y .&. 0xFF
+            poke ptr (col :: Word32)
 
          entities <- getEntities card
                         |> assertE "Can't get entities"
@@ -27,8 +34,6 @@ main = runSys' do
          -- get a primary plane
          let planes = entitiesPlanes entities
          let plane = head planes
-         let plnID = planeID plane
-         let frmID = frameID frame
 
          -- select a controller
          let ctrls = planePossibleControllers plane
@@ -36,13 +41,14 @@ main = runSys' do
 
          -- build the configuration
          assertLogShowErrorE "Config" <| withModeBlob card mode \modeBlobID ->
-            configureGraphics card Commit Synchronous AllowFullModeset
-               [ CmdPlaneTarget         plnID ctrlID 0 0 (frameWidth frame) (frameHeight frame)
-               , CmdPlaneSource         plnID frmID 0 0 (fromIntegral (frameWidth frame)) (fromIntegral (frameHeight frame))
-               , CmdConnectorController (connectorID conn) ctrlID
-               , CmdControllerMode      ctrlID modeBlobID
-               , CmdControllerActive    ctrlID True
-               ]
+            configureGraphics card Commit Synchronous AllowFullModeset do
+               setPlaneTarget plane ctrlID
+               setPlaneSize plane (frameWidth frame) (frameHeight frame)
+               setPlaneSource plane frame
+               setPlaneSourceSize plane (fromIntegral (frameWidth frame)) (fromIntegral (frameHeight frame))
+               setConnectorSource conn ctrlID
+               setMode ctrlID modeBlobID
+               enableController ctrlID True
 
    waitForKey term
    powerOff

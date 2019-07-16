@@ -3,6 +3,8 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Haskus.System.Linux.Graphics.Entities
    ( -- * IDs
@@ -20,18 +22,22 @@ module Haskus.System.Linux.Graphics.Entities
    , Connector (..)
    , Connection (..)
    , Display (..)
+   , IsConnector (..)
    -- * Encoder
    , Encoder (..)
    , EncoderType (..)
    -- * Controller
    , Controller (..)
    , FrameView (..)
+   , IsController (..)
    -- * Plane
    , Plane (..)
    , PlaneTarget (..)
    , PlaneSource (..)
+   , IsPlane (..)
    -- * Frame
    , Frame (..)
+   , IsFrame (..)
    , FrameBuffer (..)
    , showFrame
    , showFrameBuffer
@@ -95,6 +101,16 @@ data Connector = Connector
    , connectorControllerID       :: Maybe ControllerID -- ^ Current driving controller
    , connectorHandle             :: Handle             -- ^ Graphic card
    } deriving (Show)
+
+class IsConnector p where
+   getConnectorID :: p -> ConnectorID
+
+instance IsConnector Connector where
+   getConnectorID p = connectorID p
+
+instance IsConnector ConnectorID where
+   getConnectorID p = p
+
 
 -- | Indicate if a cable is plugged in the connector
 data Connection
@@ -168,6 +184,16 @@ data FrameView = FrameView
    , frameViewY  :: Word32         -- ^ Frame Y position
    } deriving (Show)
 
+
+class IsController p where
+   getControllerID :: p -> ControllerID
+
+instance IsController Controller where
+   getControllerID p = controllerID p
+
+instance IsController ControllerID where
+   getControllerID p = p
+
 -------------------------------------------------------------------------------
 -- Plane
 -------------------------------------------------------------------------------
@@ -182,6 +208,15 @@ data Plane = Plane
    , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats
    }
    deriving (Show)
+
+class IsPlane p where
+   getPlaneID :: p -> PlaneID
+
+instance IsPlane Plane where
+   getPlaneID p = planeID p
+
+instance IsPlane PlaneID where
+   getPlaneID p = p
 
 type FP16_16 = FixedPoint Word32 16 16
 
@@ -225,6 +260,16 @@ data Frame b = Frame
    , frameBuffers     :: [FrameBuffer b] -- ^ Frame components buffers (up to four depending of pixel format)
    , frameCardHandle  :: Handle          -- ^ Card handle
    } deriving (Show)
+
+class IsFrame p where
+   getFrameID :: p -> FrameID
+
+instance IsFrame (Frame a) where
+   getFrameID p = frameID p
+
+instance IsFrame FrameID where
+   getFrameID p = p
+
 
 -- | Frame buffer (contains components of the pixel colors)
 data FrameBuffer b = FrameBuffer
