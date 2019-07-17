@@ -205,7 +205,6 @@ data Plane = Plane
    , planeControllerId        :: !(Maybe ControllerID) -- ^ Connected controller
    , planeFrameId             :: !(Maybe FrameID)      -- ^ Connected frame
    , planePossibleControllers :: ![ControllerID]       -- ^ Potential controllers
-   , planeGammaSize           :: !Word32               -- ^ Size of the gamma table
    , planeFormats             :: ![PixelFormat]        -- ^ Supported pixel formats
    , planeType                :: !PlaneType            -- ^ Plane type
    }

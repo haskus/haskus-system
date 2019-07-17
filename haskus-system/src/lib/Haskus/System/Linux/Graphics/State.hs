@@ -663,7 +663,6 @@ getPlaneFromID hdl pid = do
                , planeControllerId        = toMaybe EntityID gpCrtcId
                , planeFrameId             = toMaybe EntityID gpFbId
                , planePossibleControllers = pickControllers res gpPossibleCrtcs
-               , planeGammaSize           = gpGammaSize
                , planeFormats             = fmts
                , planeType                = planeTyp
                }
