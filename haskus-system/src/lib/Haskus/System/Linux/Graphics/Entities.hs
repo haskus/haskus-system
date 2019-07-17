@@ -35,6 +35,7 @@ module Haskus.System.Linux.Graphics.Entities
    , PlaneTarget (..)
    , PlaneSource (..)
    , IsPlane (..)
+   , PlaneType (..)
    -- * Frame
    , Frame (..)
    , IsFrame (..)
@@ -200,12 +201,13 @@ instance IsController ControllerID where
 
 -- | A plane
 data Plane = Plane
-   { planeID                  :: PlaneID              -- ^ Plane identifier
-   , planeControllerId        :: Maybe ControllerID   -- ^ Connected controller
-   , planeFrameId             :: Maybe FrameID        -- ^ Connected frame
-   , planePossibleControllers :: [ControllerID]       -- ^ Potential controllers
-   , planeGammaSize           :: Word32               -- ^ Size of the gamma table
-   , planeFormats             :: [PixelFormat]        -- ^ Supported pixel formats
+   { planeID                  :: !PlaneID              -- ^ Plane identifier
+   , planeControllerId        :: !(Maybe ControllerID) -- ^ Connected controller
+   , planeFrameId             :: !(Maybe FrameID)      -- ^ Connected frame
+   , planePossibleControllers :: ![ControllerID]       -- ^ Potential controllers
+   , planeGammaSize           :: !Word32               -- ^ Size of the gamma table
+   , planeFormats             :: ![PixelFormat]        -- ^ Supported pixel formats
+   , planeType                :: !PlaneType            -- ^ Plane type
    }
    deriving (Show)
 
@@ -219,6 +221,12 @@ instance IsPlane PlaneID where
    getPlaneID p = p
 
 type FP16_16 = FixedPoint Word32 16 16
+
+data PlaneType
+   = Primary
+   | Overlay
+   | Cursor
+   deriving (Show,Eq,Ord)
 
 -- | Plane target surface
 --

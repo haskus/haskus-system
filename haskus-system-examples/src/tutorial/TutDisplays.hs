@@ -5,7 +5,6 @@
 import Haskus.System
 
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Graphics.Mode
 
 main :: IO ()

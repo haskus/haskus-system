@@ -34,6 +34,12 @@ newtype PixelFormat = PixelFormat (BitFields Word32
    , BitField 31 "format"     (EnumField Word32 Format)
    ]) deriving (Storable)
 
+instance Ord PixelFormat where
+   compare (PixelFormat (BitFields x)) (PixelFormat (BitFields y)) = compare x y
+
+instance Eq PixelFormat where
+   (==) (PixelFormat (BitFields x)) (PixelFormat (BitFields y)) = x == y
+
 instance Show PixelFormat where
    show fmt = show (formatFormat fmt) ++ " ("
                ++ show (formatEndianness fmt) ++ ")"

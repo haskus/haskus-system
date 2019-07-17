@@ -3,7 +3,6 @@
 
 import Haskus.System
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Graphics.Object
 
 main :: IO ()
 main = runSys' do

@@ -90,7 +90,6 @@ import Haskus.System.Linux.Graphics.GenericBuffer
 import Haskus.System.Linux.Graphics.Helper
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Entities
-import Haskus.System.Linux.Graphics.Object
 import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Event as Graphics

@@ -12,6 +12,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 -- | State of the graphics system
 module Haskus.System.Linux.Graphics.State
@@ -73,6 +75,18 @@ module Haskus.System.Linux.Graphics.State
    , setAtomic
    , AtomicErrors
    , InvalidProperty (..)
+   -- * Objects
+   , Object(..)
+   , ObjectType(..)
+   , ObjectNotFound
+   , RawProperty (..)
+   , showObjectQualifiedID
+   , showObjectType
+   , getObjectPropertyCount
+   , getObjectRawProperties
+   , getHandleObjectProperties
+   , setObjectRawProperty
+   , setObjectIDRawProperty
    )
 where
 
@@ -603,40 +617,56 @@ getPlaneIDs hdl = getCount >>= getIDs
 
 -- | Get plane information
 getPlaneFromID :: forall m. MonadInIO m => Handle -> PlaneID -> Excepts '[InvalidHandle,InvalidPlaneID] m Plane
-getPlaneFromID hdl pid = getCount >>= getInfo
-   where
-
-      gpr :: StructGetPlane -> Excepts '[InvalidHandle,InvalidPlaneID] m StructGetPlane
-      gpr s = ioctlGetPlane s hdl
-               |> catchLiftLeft \case
-                     EINVAL -> throwE InvalidHandle
-                     ENOENT -> throwE (InvalidPlaneID pid)
-                     e      -> unhdlErr "getPlaneFromID" e
+getPlaneFromID hdl pid = do
+   let
+      request :: StructGetPlane -> Excepts '[InvalidHandle,InvalidPlaneID] m StructGetPlane
+      request s = ioctlGetPlane s hdl
+                  |> catchLiftLeft \case
+                        EINVAL -> throwE InvalidHandle
+                        ENOENT -> throwE (InvalidPlaneID pid)
+                        e      -> unhdlErr "getPlaneFromID" e
 
       toMaybe _ 0 = Nothing
       toMaybe f x = Just (f x)
 
-      -- get the number of formats (invariant for a given plane)
-      getCount :: Excepts '[InvalidHandle,InvalidPlaneID] m Word32
-      getCount = gpr (StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 0 0)
-                  ||> gpCountFmtTypes 
+   -- get the number of formats (invariant for a given plane)
+   let reqCountFmt = StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 0 0
+   fmtCount <- request reqCountFmt ||> gpCountFmtTypes
 
-      -- get the plane info
-      getInfo :: Word32 -> Excepts '[InvalidHandle,InvalidPlaneID] m Plane
-      getInfo n = allocaArray (fromIntegral n) $ \(p :: Ptr Word32) -> do
-         let 
-            p' = fromIntegral (ptrToWordPtr p)
-            si = StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 n p'
-         gpr si >>= \StructGetPlane{..} -> liftE (getResources hdl) >>= \res -> do
-               fmts <- fmap (PixelFormat . BitFields) <$> peekArray (fromIntegral n) p
-               return <| Plane
-                  { planeID                  = pid
-                  , planeControllerId        = toMaybe EntityID gpCrtcId
-                  , planeFrameId             = toMaybe EntityID gpFbId
-                  , planePossibleControllers = pickControllers res gpPossibleCrtcs
-                  , planeGammaSize           = gpGammaSize
-                  , planeFormats             = fmts
-                  }
+   -- get the plane info
+   res <- liftE (getResources hdl)
+   allocaArray (fromIntegral fmtCount) $ \(p :: Ptr Word32) -> do
+      let
+         p' = fromIntegral (ptrToWordPtr p)
+         req = StructGetPlane (unEntityID pid) 0 0 BitSet.empty 0 fmtCount p'
+      -- get Plane type (Primary,Overlay,Cursor). Maybe we could do it more
+      -- efficiently by avoiding reading all the meta properties again.
+      planeProps <- getHandleObjectProperties hdl pid
+                     |> catchDieE (\InvalidParam   -> error "getPlaneFromID: can't get plane properties")
+                     |> catchE    (\ObjectNotFound -> failureE (InvalidPlaneID pid))
+      let planeTyp = planeProps
+                     |> filter (\prop -> propertyName (propertyMeta prop) == "type")
+                     |> headMaybe
+                     |> fromMaybe (error "getPlaneFromID: can't find plane \"type\" property")
+                     |> \prop -> case propertyType (propertyMeta prop) of
+                           PropEnum xs -> case Map.fromList xs Map.! propertyValue prop of
+                                             "Primary" -> Primary
+                                             "Overlay" -> Overlay
+                                             "Cursor"  -> Cursor
+                                             typ       -> error ("unexpected plane type: " <> typ)
+                           _           -> error "getPlaneFromID: unexpected property type"
+
+      request req >>= \StructGetPlane{..} -> do
+            fmts <- fmap (PixelFormat . BitFields) <$> peekArray (fromIntegral fmtCount) p
+            return <| Plane
+               { planeID                  = pid
+               , planeControllerId        = toMaybe EntityID gpCrtcId
+               , planeFrameId             = toMaybe EntityID gpFbId
+               , planePossibleControllers = pickControllers res gpPossibleCrtcs
+               , planeGammaSize           = gpGammaSize
+               , planeFormats             = fmts
+               , planeType                = planeTyp
+               }
 
 -- | Invalid destination rectangle
 data InvalidDestRect = InvalidDestRect deriving (Show,Eq)
@@ -996,3 +1026,186 @@ handleGetInfo hdl = do
          , drmDriverDesc        = descVal
          }
 
+
+-------------------------------------------------------------
+-- Objects
+-------------------------------------------------------------
+
+data InvalidCount   = InvalidCount Int
+data ObjectNotFound = ObjectNotFound deriving (Show,Eq)
+
+
+class Object a where
+   getObjectType :: a -> ObjectType
+   getObjectID   :: a -> Word32
+
+instance Object Controller where
+   getObjectType _ = ObjectController
+   getObjectID     = unEntityID . controllerID
+
+instance Object Connector where
+   getObjectType _ = ObjectConnector
+   getObjectID     = unEntityID . connectorID
+
+instance Object Encoder where
+   getObjectType _ = ObjectEncoder
+   getObjectID     = unEntityID . encoderID
+
+instance Object Mode where
+   getObjectType _ = ObjectMode
+   getObjectID _   = error "getObjectID unsupported for Mode objects"
+
+instance Object (Frame b) where
+   getObjectType _ = ObjectFrame
+   getObjectID     = unEntityID . frameID
+
+instance Object StructFrameCommand where
+   getObjectType _ = ObjectFrame
+   getObjectID     = fcFbId
+
+instance Object Plane where
+   getObjectType _ = ObjectPlane
+   getObjectID     = unEntityID . planeID
+
+instance Object ControllerID where
+   getObjectType _ = ObjectController
+   getObjectID     = unEntityID
+
+instance Object ConnectorID where
+   getObjectType _ = ObjectConnector
+   getObjectID     = unEntityID
+
+instance Object EncoderID where
+   getObjectType _ = ObjectEncoder
+   getObjectID     = unEntityID
+
+instance Object FrameID where
+   getObjectType _ = ObjectFrame
+   getObjectID     = unEntityID
+
+instance Object PlaneID where
+   getObjectType _ = ObjectPlane
+   getObjectID     = unEntityID
+
+instance Object (BlobID Mode) where
+   getObjectType _ = ObjectBlob
+   getObjectID     = unEntityID
+
+-- | Get a string with object type and ID
+showObjectQualifiedID :: Object a => a -> String
+showObjectQualifiedID a = showObjectType (getObjectType a) ++ " " ++ show (getObjectID a)
+
+-- | Show object type string
+showObjectType :: ObjectType -> String
+showObjectType = \case
+   ObjectController  -> "Controller"
+   ObjectConnector   -> "Connector"
+   ObjectEncoder     -> "Encoder"
+   ObjectMode        -> "Mode"
+   ObjectProperty    -> "Property"
+   ObjectFrame       -> "Frame"
+   ObjectBlob        -> "Blob"
+   ObjectPlane       -> "Plane"
+
+-- | Get object's number of properties
+getObjectPropertyCount :: (MonadInIO m, Object o) => Handle -> o -> Excepts '[ErrorCode] m Word32
+getObjectPropertyCount hdl o = ioctlGetObjectProperties s hdl ||> gopCountProps
+   where
+      s = StructGetObjectProperties 0 0 0
+            (getObjectID o)
+            (fromCEnum (getObjectType o))
+
+-- | Return object raw properties
+getObjectRawProperties :: forall m o. (MonadInIO m, Object o) => Handle -> o -> Excepts '[InvalidParam,ObjectNotFound] m [RawProperty]
+getObjectRawProperties hdl o =
+       -- we assume 20 entries is usually enough and we adapt if it isn't. By
+       -- using an initial value we avoid a syscall in most cases.
+      fixCount go 20
+   where
+      fixCount f n = f n |> catchRemove (\(InvalidCount n') -> fixCount f n')
+
+      allocaArray' 0 f = f nullPtr
+      allocaArray' n f = allocaArray (fromIntegral n) f
+
+      go :: Int -> Excepts '[InvalidCount,InvalidParam,ObjectNotFound] m [RawProperty]
+      go n =
+         allocaArray' n $ \(propsPtr :: Ptr Word32) ->
+         allocaArray' n $ \(valsPtr :: Ptr Word64) -> do
+            let
+               s = StructGetObjectProperties
+                     (fromIntegral (ptrToWordPtr propsPtr))
+                     (fromIntegral (ptrToWordPtr valsPtr))
+                     (fromIntegral n)
+                     (getObjectID o)
+                     (fromCEnum (getObjectType o))
+            ps <- liftE (getObjectProperties' s)
+            liftE (checkCount n ps)
+            lift (extractProperties ps)
+
+      getObjectProperties' :: StructGetObjectProperties -> Excepts '[InvalidParam,ObjectNotFound] m StructGetObjectProperties
+      getObjectProperties' s = ioctlGetObjectProperties s hdl
+                                 |> catchLiftLeft \case
+                                       EINVAL -> throwE InvalidParam
+                                       ENOENT -> throwE ObjectNotFound
+                                       e      -> unhdlErr "getObjectProperties" e
+
+      extractProperties :: StructGetObjectProperties -> m [RawProperty]
+      extractProperties s = do
+         let n        = fromIntegral (gopCountProps s)
+             propsPtr :: Ptr Word32
+             propsPtr = wordPtrToPtr (fromIntegral (gopPropsPtr s))
+             valsPtr :: Ptr Word64
+             valsPtr  = wordPtrToPtr (fromIntegral (gopValuesPtr s))
+         ps <- peekArray n propsPtr |||> EntityID
+         vs <- peekArray n valsPtr
+         return (zipWith RawProperty ps vs)
+
+      -- check that we have allocated enough entries to store the properties
+      checkCount :: Int -> StructGetObjectProperties -> Excepts '[InvalidCount] m ()
+      checkCount n s = do
+         let n' = fromIntegral (gopCountProps s)
+         if n' > n
+            then failureE (InvalidCount n)
+            else return ()
+
+-- | Get object properties
+--
+-- Use `getObjectProperties` instead as it uses the meta-data cache.
+getHandleObjectProperties :: forall m o.
+   ( MonadInIO m
+   , Object o
+   ) => Handle -> o -> Excepts '[InvalidParam,ObjectNotFound] m [Property]
+getHandleObjectProperties hdl obj = do
+   props <- getObjectRawProperties hdl obj
+   forMaybeM props \raw -> do
+      getPropertyMeta hdl (rawPropertyID raw)
+      ||> Just
+      -- we return Nothing in case of error
+      |> catchEvalE (const (pure Nothing))
+      -- wrap it in a Property
+      |||> \meta -> Property meta (rawPropertyValue raw)
+
+-- | Set a raw property of an object
+setObjectRawProperty ::
+   ( Object o
+   , MonadInIO m
+   ) => Handle -> o -> RawProperty -> Excepts '[InvalidParam,ObjectNotFound] m ()
+setObjectRawProperty hdl o prop =
+   setObjectIDRawProperty hdl (getObjectID o) (getObjectType o) prop
+
+-- | Set a property of an object identified by object ID and object type
+setObjectIDRawProperty ::
+   ( MonadInIO m
+   ) => Handle -> ObjectID -> ObjectType -> RawProperty -> Excepts '[InvalidParam,ObjectNotFound] m ()
+setObjectIDRawProperty hdl oid otyp prop = do
+   let s = StructSetObjectProperty
+            { sopValue   = rawPropertyValue prop
+            , sopPropId  = unEntityID (rawPropertyID prop)
+            , sopObjId   = oid
+            , sopObjType = fromCEnum otyp
+            }
+   void (ioctlSetObjectProperty s hdl)
+      |> catchLiftLeft \case
+            EINVAL -> throwE InvalidParam
+            ENOENT -> throwE ObjectNotFound
+            e      -> unhdlErr "setObjectIDRawProperty" e

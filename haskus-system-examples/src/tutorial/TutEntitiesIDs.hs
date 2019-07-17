@@ -2,7 +2,7 @@
 {-# LANGUAGE BlockArguments #-}
 
 import Haskus.System
-import Haskus.System.Linux.Graphics.Object
+import Haskus.System.Linux.Graphics.State
 
 main :: IO ()
 main = runSys do

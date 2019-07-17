@@ -29,15 +29,20 @@ main = runSys' do
             poke ptr (col :: Word32)
 
          entities <- getEntities card
-                        |> assertE "Can't get entities"
+                      |> assertE "Can't get entities"
 
          -- get a primary plane
-         let planes = entitiesPlanes entities
-         let plane = head planes
+         let plane = entitiesPlanes entities
+                      |> filter (\p -> planeType p == Primary)
+                      |> head
+
+         -- test that the plane supports the pixel format
+         unless (pixelFormat `elem` planeFormats plane) do
+            writeStrLn term "Pixel format not supported!"
 
          -- select a controller
-         let ctrls = planePossibleControllers plane
-         let ctrlID  = head ctrls
+         let ctrlID = planePossibleControllers plane
+                      |> head
 
          -- build the configuration
          assertLogShowErrorE "Config" <| withModeBlob card mode \modeBlobID ->
