@@ -18,41 +18,41 @@ main = runSys' do
    
    forM_ cards \card -> do
       forEachConnectedDisplay card \conn display -> do
-         let
-            mode        = head (displayModes display)
-            pixelFormat = makePixelFormat XRGB8888 LittleEndian
+         -- get a primary plane
+         plane <- getEntities card
+                  |> assertE "Can't get entities"
+                  ||> entitiesPlanes
+                  ||> filter (\p -> planeType p == Primary)
+                  ||> head
 
+         -- test that the plane supports the pixel format we want to use
+         let pixelFormat = makePixelFormat XRGB8888 LittleEndian
+         unless (pixelFormat `elem` planeFormats plane) do
+            writeStrLn term "Pixel format not supported!"
+
+         -- create and fill a fullscreen frame for the preferred mode (first in
+         -- the list)
+         let mode = head (displayModes display)
          frame <- createGenericFullScreenFrame card mode pixelFormat 0
-          -- fill the frame
          forEachGenericFramePixel frame 0 \x y ptr -> do
             let col = 0x310000 + (x .&. 0xFF) `shiftL` 8 + y .&. 0xFF
             poke ptr (col :: Word32)
-
-         entities <- getEntities card
-                      |> assertE "Can't get entities"
-
-         -- get a primary plane
-         let plane = entitiesPlanes entities
-                      |> filter (\p -> planeType p == Primary)
-                      |> head
-
-         -- test that the plane supports the pixel format
-         unless (pixelFormat `elem` planeFormats plane) do
-            writeStrLn term "Pixel format not supported!"
 
          -- select a controller
          let ctrlID = planePossibleControllers plane
                       |> head
 
-         -- build the configuration
+         -- build the pipeline
          assertLogShowErrorE "Config" <| withModeBlob card mode \modeBlobID ->
             configureGraphics card Commit Synchronous AllowFullModeset do
-               setPlaneTarget plane ctrlID
+               setConnectorSource conn ctrlID -- connector  <-> controller
+               setPlaneTarget plane ctrlID    -- controller <-> plane
+               setPlaneSource plane frame     -- plane      <-> frame
+               -- sizes and modes
                setPlaneSize plane (frameWidth frame) (frameHeight frame)
-               setPlaneSource plane frame
                setPlaneSourceSize plane (fromIntegral (frameWidth frame)) (fromIntegral (frameHeight frame))
-               setConnectorSource conn ctrlID
                setMode ctrlID modeBlobID
+               -- enable the controller
                enableController ctrlID True
 
    waitForKey term
