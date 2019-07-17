@@ -44,7 +44,7 @@ main = runSys' do
 
          -- build the pipeline
          assertLogShowErrorE "Config" <| withModeBlob card mode \modeBlobID ->
-            configureGraphics card Commit Synchronous AllowFullModeset do
+            configureGraphics card Commit EnableVSync EnableFullModeset do
                setConnectorSource conn ctrlID -- connector  <-> controller
                setPlaneTarget plane ctrlID    -- controller <-> plane
                setPlaneSource plane frame     -- plane      <-> frame

@@ -8,8 +8,8 @@
 module Haskus.System.Graphics.Config
    ( configureGraphics
    , CommitOrTest (..)
-   , AsyncMode (..)
-   , AllowModeSet (..)
+   , VSync (..)
+   , FullModeSet (..)
    -- * Config monad
    , getConfigCard
    , Config (..)
@@ -194,23 +194,22 @@ data CommitOrTest
 
 -- | Commit during VBLANK interval (synchronous) or as-soon-as-possible
 -- (asynchronous, may not be supported)
-data AsyncMode
-   = Synchronous   -- ^ Synchronous commit
-   | Asynchronous  -- ^ Asynchronous commit (may not be supported)
+data VSync
+   = EnableVSync  -- ^ Vertical sync
+   | DisableVSync -- ^ No vertical sync (may not be supported, check the capability)
+   deriving (Show,Eq,Ord)
 
 -- | Do we allow full mode-setting
 -- 
 -- This flag is useful for devices such as tablets whose screen is often
 -- shutdown: we can use a degraded mode (scaled, etc.) for a while to save power
 -- and only perform the full modeset when the screen is reactivated.
-data AllowModeSet
-   = AllowFullModeset      -- ^ Allow full mode-setting
-   | DisallowFullModeset   -- ^ Don't allow full mode-setting
+data FullModeSet
+   = EnableFullModeset    -- ^ Allow full mode-setting
+   | DisableFullModeset   -- ^ Don't allow full mode-setting
 
--- | Perform mode-setting
---
--- We use the "atomic" API which should become the standard
-configureGraphics :: MonadInIO m => GraphicCard -> CommitOrTest -> AsyncMode -> AllowModeSet -> Config a -> Excepts AtomicErrors m ()
+-- | Configure the graphics pipeline by submitting a batch of commands
+configureGraphics :: MonadInIO m => GraphicCard -> CommitOrTest -> VSync -> FullModeSet -> Config a -> Excepts AtomicErrors m ()
 configureGraphics card testMode asyncMode modesetMode cfg = do
    let
       !flags = BitSet.fromList <| concat <|
@@ -218,11 +217,14 @@ configureGraphics card testMode asyncMode modesetMode cfg = do
             TestOnly            -> [AtomicFlagTestOnly]
             Commit              -> []
          , case asyncMode of
-            Synchronous         -> []
-            Asynchronous        -> [AtomicFlagNonBlock]
+            EnableVSync         -> []
+            DisableVSync        -> [AtomicFlagSwitchFrameAsync]
          , case modesetMode of
-            AllowFullModeset    -> [AtomicFlagAllowModeset]
-            DisallowFullModeset -> []
+            EnableFullModeset   -> [AtomicFlagAllowModeset]
+            DisableFullModeset  -> []
+         , [ AtomicFlagSwitchFrameGenerateEvent -- always generate event
+           , AtomicFlagNonBlock                 -- always non-blocking?
+           ]
          ]
 
       props = configProperties card cfg
