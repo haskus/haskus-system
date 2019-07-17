@@ -50,7 +50,7 @@ main = runSys' do
                setPlaneSource plane frame     -- plane      <-> frame
                -- sizes and modes
                setPlaneSize plane (frameWidth frame) (frameHeight frame)
-               setPlaneSourceSize plane (fromIntegral (frameWidth frame)) (fromIntegral (frameHeight frame))
+               setPlaneSourceSize plane (frameWidth frame) (frameHeight frame)
                setMode ctrlID modeBlobID
                -- enable the controller
                enableController ctrlID True

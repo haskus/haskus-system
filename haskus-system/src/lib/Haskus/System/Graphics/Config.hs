@@ -19,6 +19,7 @@ module Haskus.System.Graphics.Config
    , setRawProperty
    , setPlaneSourcePosition
    , setPlaneSourceSize
+   , setPlaneSourceSubSize
    , setPlanePosition
    , setPlaneSize
    , setPlaneSource
@@ -122,13 +123,18 @@ setPlaneSourcePosition p x y = do
    setObjectProperty (getPlaneID p) srcX (fromIntegral <| getFixedPointBase x)
    setObjectProperty (getPlaneID p) srcY (fromIntegral <| getFixedPointBase y)
 
--- | Set Plane source size
-setPlaneSourceSize :: IsPlane p => p -> FP16_16 -> FP16_16 -> Config ()
-setPlaneSourceSize p w h = do
+-- | Set Plane source size allowing subpixel indexing
+setPlaneSourceSubSize :: IsPlane p => p -> FP16_16 -> FP16_16 -> Config ()
+setPlaneSourceSubSize p w h = do
    srcW <- getPropertyID "SRC_W"
    srcH <- getPropertyID "SRC_H"
    setObjectProperty (getPlaneID p) srcW (fromIntegral <| getFixedPointBase w)
    setObjectProperty (getPlaneID p) srcH (fromIntegral <| getFixedPointBase h)
+
+-- | Set Plane source size
+setPlaneSourceSize :: IsPlane p => p -> Word32 -> Word32 -> Config ()
+setPlaneSourceSize p w h =
+   setPlaneSourceSubSize p (fromIntegral w) (fromIntegral h)
 
 -- | Set Plane position
 setPlanePosition :: (IsPlane p) => p -> Int32 -> Int32 -> Config ()
