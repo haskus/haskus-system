@@ -106,8 +106,21 @@ module Haskus.System.Linux.Graphics.KIO
    -- * Prime
    , StructPrimeHandle (..)
    , PrimeFlag (..)
+   -- * VBlank
+   , VBlankWaitParams
+   , StructVBlank (..)
+   , VBlankFlag (..)
+   , VBlankFlags
+   -- * Sequence
+   , StructGetSequence (..)
+   , StructQueueSequence (..)
+   , QueueEventFlags
+   , QueueEventFlag (..)
+   , ioctlSequenceGet
+   , ioctlSequenceQueue
    -- * IOCTLs
    , ioctlGetVersion
+   , ioctlWaitVBlank
    , ioctlGetCapabilities
    , ioctlSetClientCapability
    , ioctlGetResources
@@ -1155,16 +1168,78 @@ data StructPrimeHandle = StructPrimeHandle
 
 -- | struct drm_version (only 64-bit)
 data StructVersion = StructVersion
-   { verMajor      :: Int32
-   , verMinor      :: Int32
-   , verPatchLevel :: Int32
-   , verNameLen    :: Word64 -- these fields are not ABI compatible on 32-bit archs
-   , verNamePtr    :: Word64 -- (must be 32-bit types)
-   , verDateLen    :: Word64
-   , verDatePtr    :: Word64
-   , verDescLen    :: Word64
-   , verDescPtr    :: Word64
+   { verMajor      :: {-# UNPACK #-} !Int32
+   , verMinor      :: {-# UNPACK #-} !Int32
+   , verPatchLevel :: {-# UNPACK #-} !Int32
+   , verNameLen    :: {-# UNPACK #-} !Word64 -- these fields are not ABI compatible on 32-bit archs
+   , verNamePtr    :: {-# UNPACK #-} !Word64 -- (must be 32-bit types)
+   , verDateLen    :: {-# UNPACK #-} !Word64
+   , verDatePtr    :: {-# UNPACK #-} !Word64
+   , verDescLen    :: {-# UNPACK #-} !Word64
+   , verDescPtr    :: {-# UNPACK #-} !Word64
    } deriving (Generic,Storable)
+
+
+-- | drm_wait_vblank_reply (only 64-bit)
+--
+-- drm_wait_vblank_{request,reply} are used as an union drm_wait_vblank.
+-- However, as the "signal" field in the request is unsupported, we can directly
+-- use drm_wait_vblank_reply instead of the union.
+data StructVBlank = StructVBlank
+   { vblankSeqType      :: {-# UNPACK #-} !VBlankWaitParams
+   , vblankSequence     :: {-# UNPACK #-} !Word64
+   , vblankSeconds      :: {-# UNPACK #-} !Word64
+   , vblankMicroSeconds :: {-# UNPACK #-} !Word64
+   } deriving (Generic,Storable)
+
+-- drm_vblank_seq_type is an awful mess. It's an enum used as a bitset with
+-- fields in it... We convert it into a proper BitFields.
+type VBlankWaitParams = BitFields Word64
+   '[ BitField 38 "flags"        VBlankFlags -- ^ Flags
+    , BitField 20 ""             Word32      -- ^ Reserved
+    , BitField 5  "crtc_index"   Word8       -- ^ Controller (CRTC) index (not ID!)
+    , BitField 1  "relative_seq" Bool        -- ^ Is the sequence number relative or absolute
+    ]
+
+-- | VBlank wait flags
+data VBlankFlag
+   = VBlankSendEventNoBlock -- ^ Send event instead of blocking
+   | VBlankSwitchFrame      -- ^ Scheduled frame switch should occur?
+   | VBlankNextOnMiss       -- ^ If missed, wait for next vblank
+   | VBlankSecondary        -- ^ Secondary display controller
+   | VBlankSignal           -- ^ Send signal instead of blocking, unsupported
+   deriving (Show,Eq,Ord,Enum,BitOffset)
+
+type VBlankFlags = BitSet Word64 VBlankFlag
+
+-- | drm_crtc_get_sequence
+--
+-- Query current scanout sequence number
+data StructGetSequence = StructGetSequence
+   { gseqCrtcID              :: Word32 -- ^ Controller ID
+   , gseqActive              :: Word32 -- ^ Return: controller is active or not
+   , gseqSequence            :: Word64 -- ^ Return: most recent vblank sequence number
+   , gseqSequenceNanoSeconds :: Int64  -- ^ Return: most recent time of first pixel out
+   } deriving (Generic,Storable)
+
+
+-- | drm_crtc_queue_sequence
+--
+-- Queue event to be delivered at specified sequence. Time stamp marks when the
+-- first pixel of the refresh cycle leaves the display engine for the display.
+data StructQueueSequence = StructQueueSequence
+   { qseqCrtcID   :: Word32          -- ^ Controller ID
+   , qseqFlags    :: QueueEventFlags -- ^ Flags
+   , qseqSequence :: Word64          -- ^ Input: target sequence. Return: actual sequence number
+   , qseqUserData :: Word64          -- ^ User data passed to event
+   } deriving (Generic,Storable)
+
+type QueueEventFlags = BitSet Word32 QueueEventFlag
+
+data QueueEventFlag
+   = QueueEventRelativeSequence -- ^ Is the sequence relative instead of absolute
+   | QueueEventNextOnMiss       -- ^ Use next sequence if we've missed
+   deriving (Show,Eq,Ord,Enum,BitOffset)
 
 -----------------------------------------------------------------------------
 -- IOCTLs
@@ -1175,6 +1250,15 @@ drmIoctl = ioctlWriteRead 0x64
 
 ioctlGetVersion :: MonadInIO m => StructVersion -> Handle -> Excepts '[ErrorCode] m StructVersion
 ioctlGetVersion = drmIoctl 0x00
+
+ioctlWaitVBlank :: MonadInIO m => StructVBlank -> Handle -> Excepts '[ErrorCode] m StructVBlank
+ioctlWaitVBlank = drmIoctl 0x3A
+
+ioctlSequenceGet :: MonadInIO m => StructGetSequence -> Handle -> Excepts '[ErrorCode] m StructGetSequence
+ioctlSequenceGet = drmIoctl 0x3B
+
+ioctlSequenceQueue :: MonadInIO m => StructQueueSequence -> Handle -> Excepts '[ErrorCode] m StructQueueSequence
+ioctlSequenceQueue = drmIoctl 0x3C
 
 ioctlGetCapabilities :: MonadInIO m => StructGetCap -> Handle -> Excepts '[ErrorCode] m StructGetCap
 ioctlGetCapabilities = drmIoctl 0x0C
