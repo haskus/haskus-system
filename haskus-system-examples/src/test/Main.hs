@@ -22,7 +22,7 @@ import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Helper
-import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Graphics.Drawing
 import qualified Haskus.System.Graphics.Diagrams as D

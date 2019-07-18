@@ -3,10 +3,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 
--- | DRM/KMS Internals
+-- | Interface with the Kernel DRM/KMS subsystems
 --
 -- Bindings with C structures and IOCTLs
-module Haskus.System.Linux.Internals.Graphics
+module Haskus.System.Linux.Graphics.KIO
    (
    -- * Mode
      ModeType (..)
@@ -63,7 +63,7 @@ module Haskus.System.Linux.Internals.Graphics
    , DirtyAnnotation (..)
    , dirtyMaxClips
    , StructFrameDirty (..)
-   , StructModeCommand (..)   -- move
+   , StructModeCommand (..)
    -- * Cursor
    , CursorFlag (..)
    , CursorFlags

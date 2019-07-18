@@ -53,7 +53,6 @@ library
     Haskus.System.Linux.Internals.FileSystem
     Haskus.System.Linux.Internals.Input
     Haskus.System.Linux.Internals.Sound
-    Haskus.System.Linux.Internals.Graphics
     Haskus.System.Linux.Internals.Reboot
     Haskus.System.Linux.Internals.Ioctl
     Haskus.System.Linux.Internals.Fcntl
@@ -109,6 +108,7 @@ library
     Haskus.System.Linux.Graphics.PixelFormat
     Haskus.System.Linux.Graphics.Helper
     Haskus.System.Linux.Graphics.State
+    Haskus.System.Linux.Graphics.KIO
 
     Haskus.System.Posix.Malloc
 

@@ -57,8 +57,8 @@ import Haskus.Format.Binary.Storable
 import Haskus.Format.Binary.FixedPoint
 import Haskus.Format.Binary.Buffer
 import qualified Haskus.Format.Binary.BitSet as BitSet
-import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.Handle
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.Utils.Flow

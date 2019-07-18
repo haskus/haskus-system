@@ -36,7 +36,7 @@ where
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.State
-import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Graphics
 import Haskus.Utils.Flow
 import Haskus.Utils.List as List

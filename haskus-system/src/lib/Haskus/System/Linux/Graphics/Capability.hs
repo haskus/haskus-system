@@ -11,7 +11,7 @@ module Haskus.System.Linux.Graphics.Capability
    )
 where
 
-import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.ErrorCode
 import Haskus.Format.Binary.Enum

@@ -81,9 +81,9 @@ import Haskus.System.System
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.FileSystem.ReadWrite
 
-import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Error
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Capability
 import Haskus.System.Linux.Graphics.GenericBuffer

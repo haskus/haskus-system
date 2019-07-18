@@ -29,7 +29,7 @@ import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
-import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.Format.Binary.Vector as Vector
 import Haskus.Format.Binary.Word
 import Foreign.Ptr

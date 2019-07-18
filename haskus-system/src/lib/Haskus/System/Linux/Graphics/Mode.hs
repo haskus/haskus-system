@@ -24,7 +24,7 @@ import Haskus.Format.Binary.Word
 import Foreign.Ptr (castPtr)
 import Haskus.Format.Binary.Storable
 import Haskus.Format.String
-import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.KIO
 import qualified Haskus.Utils.List as List
 
 -- | Display mode

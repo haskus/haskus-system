@@ -15,7 +15,7 @@ import Haskus.Format.Binary.Word
 import Foreign.Ptr
 import Haskus.Format.Binary.Buffer
 import Haskus.Format.Binary.Storable
-import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.Utils.Monad
 import Haskus.Utils.Flow
 

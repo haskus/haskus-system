@@ -94,7 +94,7 @@ import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
-import Haskus.System.Linux.Internals.Graphics
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Error
 import Haskus.System.Linux.Handle

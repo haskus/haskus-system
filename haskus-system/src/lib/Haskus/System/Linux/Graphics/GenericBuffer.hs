@@ -25,8 +25,8 @@ where
 
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
-import Haskus.System.Linux.Internals.Graphics
 import Haskus.System.Linux.Memory
+import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.Utils.Flow
 import Haskus.Format.Binary.BitSet as BitSet
