@@ -11,8 +11,8 @@ module Haskus.System.Linux.ErrorCode
    )
 where
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Enum
+import Haskus.Number.Int
+import Haskus.Binary.Enum
 import Haskus.Utils.Flow
 import Haskus.System.Linux.Internals.Error
 

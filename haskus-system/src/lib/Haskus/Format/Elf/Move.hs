@@ -6,10 +6,10 @@ module Haskus.Format.Elf.Move
    )
 where
 
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Put
+import Haskus.Binary.Bits
+import Haskus.Number.Word
+import Haskus.Binary.Get
+import Haskus.Binary.Put
 import Haskus.Format.Elf.PreHeader
 
 -- | Move record

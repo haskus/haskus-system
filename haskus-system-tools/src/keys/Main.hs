@@ -10,7 +10,7 @@ import Haskus.System.Process
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.FileSystem
 import Haskus.Utils.Flow
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import qualified Haskus.Binary.BitSet as BitSet
 
 import System.Environment
 

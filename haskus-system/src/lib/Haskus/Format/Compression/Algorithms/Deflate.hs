@@ -27,12 +27,12 @@ import Haskus.Utils.Flow (when,replicateM)
 import Haskus.Utils.List (sortBy)
 import Haskus.Utils.Tuple (swap)
 import Haskus.Utils.Maybe (fromJust)
-import Haskus.Format.Binary.Bits (shiftL, xor, (.|.), (.&.), testBit)
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Bits.Get
-import Haskus.Format.Binary.Bits.Order
-import Haskus.Format.Binary.Bits.Put
+import Haskus.Binary.Bits (shiftL, xor, (.|.), (.&.), testBit)
+import Haskus.Number.Word
+import Haskus.Binary.Buffer
+import Haskus.Binary.Bits.Get
+import Haskus.Binary.Bits.Order
+import Haskus.Binary.Bits.Put
 import Haskus.Format.Compression.Algorithms.Huffman
 
 -- 

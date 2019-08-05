@@ -12,7 +12,7 @@ import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls
 import Foreign.Ptr
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Haskus.Utils.Flow
 
 -- | Create a pipe

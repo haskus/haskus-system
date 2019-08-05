@@ -24,7 +24,7 @@ module Haskus.Arch.X86_64.Linux.Syscall
 where
 
 import Haskus.System.Linux.Internals.Arg
-import Haskus.Format.Binary.Word
+import Haskus.Number.Int
 import GHC.Base
 
 --------------------------------------------------

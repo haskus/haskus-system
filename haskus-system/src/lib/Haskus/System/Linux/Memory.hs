@@ -25,11 +25,12 @@ module Haskus.System.Linux.Memory
 where
 
 import Foreign.Ptr
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.BitField
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Bits ((.&.))
+import Haskus.Binary.Storable
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.BitField
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Bits ((.&.))
 import Haskus.Utils.Maybe (fromMaybe)
 import Haskus.Utils.Flow
 import Haskus.System.Linux.ErrorCode

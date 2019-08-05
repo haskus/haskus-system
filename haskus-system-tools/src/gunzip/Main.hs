@@ -6,7 +6,7 @@ import System.FilePath (replaceExtension)
 import Haskus.Utils.List (isSuffixOf)
 import Haskus.Utils.Flow (forM_,when)
 import qualified Haskus.Format.Compression.GZip as GZip
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Buffer
 import qualified Haskus.Utils.Text as Text
 
 main :: IO ()

@@ -186,14 +186,16 @@ where
 import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.Types hiding (Union)
 import Haskus.Utils.Flow
-import Haskus.Format.Binary.Vector (Vector, vectorReverse)
-import Haskus.Format.Binary.Union
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Vector (Vector, vectorReverse)
+import Haskus.Binary.Union
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.CTypes
 import Foreign.Ptr
-import Haskus.Format.Binary.BitSet
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.BitSet
+import Haskus.Binary.Enum
+import Haskus.Binary.Bits
+import Haskus.Binary.Storable
 import Haskus.Format.String
 import Haskus.System.Linux.Internals.Error
 import Haskus.System.Linux.Ioctl

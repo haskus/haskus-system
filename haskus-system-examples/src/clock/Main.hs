@@ -7,8 +7,8 @@
 import Haskus.System
 import Clock.Render
 
-import Haskus.Format.Binary.Endianness
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Binary.Endianness
+import qualified Haskus.Binary.BitSet as BitSet
 
 import Haskus.System.Linux.Time
 import Haskus.System.Linux.Graphics.State

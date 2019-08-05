@@ -10,7 +10,7 @@ module Haskus.Format.Elf.RelocationType
 where
 
 import Haskus.Format.Elf.Header
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 
 -- | Create relocation type
 toRelocType :: Arch -> Word32 -> RelocationType

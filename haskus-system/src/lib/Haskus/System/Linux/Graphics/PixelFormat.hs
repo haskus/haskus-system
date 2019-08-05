@@ -14,11 +14,11 @@ module Haskus.System.Linux.Graphics.PixelFormat
    )
 where
 
-import Haskus.Format.Binary.Endianness
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.BitField
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Endianness
+import Haskus.Binary.Enum
+import Haskus.Binary.BitField
+import Haskus.Number.Word
+import Haskus.Binary.Storable
 import Haskus.Utils.Tuple (swap)
 
 import Data.Char (ord)

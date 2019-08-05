@@ -11,8 +11,8 @@ where
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Handle
-import Haskus.Format.Binary.Word (Word64)
-import Haskus.Format.Binary.Bits ((.|.))
+import Haskus.Number.Word (Word64)
+import Haskus.Binary.Bits ((.|.))
 import Haskus.Utils.List (foldl')
 import Haskus.Utils.Flow
 

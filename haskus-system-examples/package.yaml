@@ -130,3 +130,8 @@ executables:
       main: TutFirstPipeline.hs
       source-dirs: src/tutorial
       other-modules: []
+
+   TutFrameSwitch:
+      main: TutFrameSwitch.hs
+      source-dirs: src/tutorial
+      other-modules: []

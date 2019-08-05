@@ -17,12 +17,12 @@ module Haskus.System.Linux.Graphics.Mode
    )
 where
 
-import Haskus.Format.Binary.BitField
-import qualified Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
+import Haskus.Binary.BitField
+import qualified Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Enum
+import Haskus.Number.Word
 import Foreign.Ptr (castPtr)
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Haskus.Format.String
 import Haskus.System.Linux.Graphics.KIO
 import qualified Haskus.Utils.List as List

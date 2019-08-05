@@ -5,11 +5,11 @@
 module Haskus.System.Linux.Internals.IfLink where
 
 import Haskus.Utils.Types.Generics (Generic)
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Vector (Vector)
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.BitSet
-import Haskus.Format.Binary.Endianness
+import Haskus.Binary.Storable
+import Haskus.Binary.Vector (Vector)
+import Haskus.Number.Word
+import Haskus.Binary.BitSet
+import Haskus.Binary.Endianness
 
 -- =============================================================
 --    From linux/include/uapi/linux/if_link.h

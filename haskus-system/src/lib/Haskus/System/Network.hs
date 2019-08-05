@@ -7,7 +7,7 @@ module Haskus.System.Network
    )
 where
 
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import qualified Haskus.Binary.BitSet as BitSet
 import Haskus.System.Linux.KernelEvent
 import Haskus.System.Linux.Network
 import Haskus.System.Linux.Handle

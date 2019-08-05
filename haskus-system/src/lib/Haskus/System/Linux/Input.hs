@@ -11,7 +11,7 @@ where
 import Haskus.System.Linux.Internals.Input
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.ErrorCode
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Buffer
 import Haskus.Utils.Flow
 
 

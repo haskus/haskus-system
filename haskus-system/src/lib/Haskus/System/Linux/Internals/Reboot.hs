@@ -5,7 +5,7 @@ module Haskus.System.Linux.Internals.Reboot
    )
 where
 
-import Haskus.Format.Binary.Word (Word64)
+import Haskus.Number.Word (Word64)
 
 -- =============================================================
 --    From linux/include/uapi/linux/reboot.h

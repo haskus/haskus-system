@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Haskus.System
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text ((%),shown,textFormat)
 import Haskus.Format.Elf

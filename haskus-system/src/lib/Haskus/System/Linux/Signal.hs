@@ -22,10 +22,10 @@ where
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Process
-import Haskus.Format.Binary.Vector (Vector)
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Vector (Vector)
+import Haskus.Number.Word
 import Foreign.Ptr
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Haskus.Utils.Flow
 import Haskus.Memory.Utils
 

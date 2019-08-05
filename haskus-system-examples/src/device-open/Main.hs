@@ -4,7 +4,7 @@
 
 import Haskus.System
 import Haskus.System.Linux.FileSystem.ReadWrite
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 
 main :: IO ()
 main = runSys' do

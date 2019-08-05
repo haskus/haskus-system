@@ -14,8 +14,8 @@ where
 import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.ErrorCode
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Enum
+import Haskus.Number.Word
 import Haskus.Utils.Flow
 
 -- | Get a capability

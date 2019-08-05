@@ -7,8 +7,8 @@ import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 
 import Haskus.System.Linux.Internals.Input
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Enum
+import Haskus.Number.Word
 
 testsInput :: TestTree
 testsInput = testGroup "Input"

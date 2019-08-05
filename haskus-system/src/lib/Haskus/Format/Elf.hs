@@ -59,11 +59,11 @@ import Control.Arrow (second)
 
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (Text)
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Buffer
 import Foreign.Ptr
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Get
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Number.Word
+import Haskus.Binary.Get
+import qualified Haskus.Binary.BitSet as BitSet
 
 import Haskus.Format.Elf.PreHeader
 import Haskus.Format.Elf.Header

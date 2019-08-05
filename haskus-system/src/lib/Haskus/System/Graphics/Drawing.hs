@@ -23,11 +23,11 @@ import Codec.Picture.Types
 
 import Control.Loop (forLoop)
 
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Bits
+import Haskus.Number.Word
+import Haskus.Binary.Storable
 import Foreign.Ptr
-import Haskus.Format.Binary.Buffer as B
+import Haskus.Binary.Buffer as B
 import Haskus.System.Graphics
 import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.PixelFormat

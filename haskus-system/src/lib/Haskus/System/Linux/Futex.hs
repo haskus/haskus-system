@@ -13,7 +13,7 @@ module Haskus.System.Linux.Futex
 where
 
 import Foreign.Ptr
-import Haskus.Format.Binary.Word
+import Haskus.Number.Int
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Time

@@ -6,7 +6,7 @@ module Haskus.System.Linux.Internals.Fcntl
    )
 where
 
-import Haskus.Format.Binary.Enum
+import Haskus.Binary.Enum
 
 -- =============================================================
 --    From linux/include/uapi/asm-generic/fcntl.h

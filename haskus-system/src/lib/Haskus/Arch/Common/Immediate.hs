@@ -17,7 +17,7 @@ module Haskus.Arch.Common.Immediate
    )
 where
 
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 import Haskus.Arch.Common.Solver
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow

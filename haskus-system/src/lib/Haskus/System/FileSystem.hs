@@ -23,10 +23,10 @@ import Haskus.System.Linux.Handle
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.FileSystem
 import Haskus.System.Linux.FileSystem.ReadWrite
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Binary.Buffer
+import Haskus.Number.Word
+import Haskus.Binary.Storable
+import Haskus.Binary.BitSet as BitSet
 import Haskus.System.Sys
 import Haskus.Utils.Flow
 import Haskus.Utils.Types.List

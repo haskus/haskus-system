@@ -28,9 +28,9 @@ import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Internals.Netlink
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Bits
+import Haskus.Number.Word
+import Haskus.Binary.Storable
+import Haskus.Binary.Bits
 import Foreign.Ptr
 
 data ShutFlag

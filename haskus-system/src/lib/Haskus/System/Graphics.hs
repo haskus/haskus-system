@@ -66,17 +66,17 @@ import Haskus.System.Sys
 import Haskus.System.Devices
 import Haskus.System.Process
 import Haskus.System.Event
-import Haskus.Format.Binary.BitSet (BitOffset(..), BitSet)
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Binary.BitSet (BitOffset(..), BitSet)
+import qualified Haskus.Binary.BitSet as BitSet
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (textFormat,shown,(%))
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Haskus.Utils.Flow
 import Haskus.Utils.List (unsafeAt,isPrefixOf)
 import Haskus.Utils.Maybe
 import Haskus.Utils.STM
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Bits
+import Haskus.Number.Word
+import Haskus.Binary.Bits
 import Haskus.System.System
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.FileSystem.ReadWrite

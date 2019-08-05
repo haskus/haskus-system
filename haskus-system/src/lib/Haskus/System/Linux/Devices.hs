@@ -37,10 +37,10 @@ import Haskus.System.Linux.FileSystem
 import Haskus.System.Linux.FileSystem.ReadWrite
 import Haskus.System.Linux.FileSystem.SymLink
 
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import qualified Haskus.Binary.BitSet as BitSet
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (Text)
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 import Haskus.Utils.Flow
 import Haskus.System.FileSystem
 

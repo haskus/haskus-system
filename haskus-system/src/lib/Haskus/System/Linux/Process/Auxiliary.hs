@@ -17,8 +17,8 @@ module Haskus.System.Linux.Process.Auxiliary
    )
 where
 
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Enum
+import Haskus.Number.Word
 import Haskus.System.Linux.Handle
 
 -- =============================================================

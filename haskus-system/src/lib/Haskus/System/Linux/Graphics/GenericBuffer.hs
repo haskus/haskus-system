@@ -29,8 +29,8 @@ import Haskus.System.Linux.Memory
 import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.Utils.Flow
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Word
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Number.Word
 -- required to use a finalizer calling back into Haskell (sysMemUnmap)
 import Foreign.Concurrent (newForeignPtr)
 import Foreign.ForeignPtr hiding (newForeignPtr)

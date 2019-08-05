@@ -107,13 +107,14 @@ module Haskus.System.Linux.Internals.Terminal
    )
 where
 
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.BitField
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Vector
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Enum
+import Haskus.Binary.BitField
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Vector
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Bits
+import Haskus.Binary.Storable
 import Haskus.Utils.Flow
 import Haskus.Utils.Types.Generics
 import Haskus.System.Linux.Internals.Ioctl

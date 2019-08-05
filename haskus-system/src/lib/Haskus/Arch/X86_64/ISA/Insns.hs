@@ -803,7 +803,7 @@ import Haskus.Arch.X86_64.ISA.Immediate
 import Haskus.Arch.X86_64.ISA.Memory
 import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.X86_64.ISA.Operand
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 import Haskus.Utils.Solver
 
 -------------------------------------------------------------------

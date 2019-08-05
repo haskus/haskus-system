@@ -11,10 +11,10 @@ module Haskus.System.Linux.Sound.Pcm
 where
 
 import Haskus.System.Linux.Internals.Sound
-import qualified Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.BitSet (BitOffset)
-import qualified Haskus.Format.Binary.Vector as Vector
-import Haskus.Format.Binary.Bits (complement,zeroBits)
+import qualified Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.BitSet (BitOffset)
+import qualified Haskus.Binary.Vector as Vector
+import Haskus.Binary.Bits (complement,zeroBits)
 
 import Data.Set (Set)
 import qualified Data.Set as Set

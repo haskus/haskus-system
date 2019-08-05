@@ -13,7 +13,7 @@ import Test.Tasty.QuickCheck as QC
 
 import qualified Data.ByteString as BS
 
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Buffer
 
 -- | Ensure a function is bijective
 isBijective :: Eq a => (a -> a) -> a -> Bool

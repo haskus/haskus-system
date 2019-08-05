@@ -74,14 +74,15 @@ module Haskus.System.Linux.Internals.Input
    )
 where
 
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Union
-import Haskus.Format.Binary.Vector (Vector)
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Enum
+import Haskus.Binary.Union
+import Haskus.Binary.Vector (Vector)
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Bits
+import Haskus.Binary.Buffer
+import Haskus.Binary.Storable
 import Haskus.Format.String (peekCString)
 import Haskus.System.Linux.Internals.Tables
 import Haskus.System.Linux.Internals.Error

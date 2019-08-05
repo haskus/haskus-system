@@ -8,8 +8,8 @@ module Haskus.Arch.X86_64.Disassembler
    )
    where
 
-import Haskus.Format.Binary.Get as G
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Get as G
+import Haskus.Binary.Buffer
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Decoder

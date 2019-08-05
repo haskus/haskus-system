@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-import Haskus.Format.Binary.Unum
+import Haskus.Binary.Unum
 import Data.Proxy
 
 data PI

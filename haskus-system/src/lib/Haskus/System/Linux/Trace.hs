@@ -16,8 +16,9 @@ where
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Process (ProcessID(..))
-import Haskus.Format.Binary.BitSet
-import Haskus.Format.Binary.Word
+import Haskus.Binary.BitSet
+import Haskus.Number.Word
+import Haskus.Number.Int
 import Foreign.Ptr
 import Haskus.Utils.Flow
 

@@ -18,10 +18,10 @@ module Haskus.System.Linux.FileSystem.Mount
 where
 
 import Foreign.Ptr (Ptr,nullPtr)
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.BitSet
+import Haskus.Number.Word
+import Haskus.Binary.BitSet
 import Haskus.Format.String (withCString)
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import qualified Haskus.Binary.BitSet as BitSet
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Internals.FileSystem

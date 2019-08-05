@@ -14,9 +14,9 @@ import Haskus.System
 
 import Haskus.System.Linux.FileSystem.Directory
 import Haskus.System.Linux.FileSystem
-import qualified Haskus.Format.Binary.Buffer as B
-import Haskus.Format.Binary.Endianness
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import qualified Haskus.Binary.Buffer as B
+import Haskus.Binary.Endianness
+import qualified Haskus.Binary.BitSet as BitSet
 
 import Haskus.System.Linux.Graphics.State
 import Haskus.System.Linux.Graphics.Mode

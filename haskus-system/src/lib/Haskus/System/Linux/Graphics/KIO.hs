@@ -166,14 +166,15 @@ import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Internals.Error
 import Haskus.System.Linux.Graphics.PixelFormat
 
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Vector as Vector
-import Haskus.Format.Binary.BitField
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.FixedPoint
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Vector as Vector
+import Haskus.Binary.BitField
+import Haskus.Binary.Enum
+import Haskus.Number.FixedPoint
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Bits
+import Haskus.Binary.Storable
 import Haskus.Format.String
 import Haskus.Utils.Flow
 import Haskus.Utils.Types.Generics (Generic)
@@ -1202,13 +1203,25 @@ type VBlankWaitParams = BitFields Word64
     ]
 
 -- | VBlank wait flags
+--
+-- We don't include DRM_VBLANK_FLIP and DRM_VBLANK_SIGNAL because they are not
+-- supported
 data VBlankFlag
    = VBlankSendEventNoBlock -- ^ Send event instead of blocking
-   | VBlankSwitchFrame      -- ^ Scheduled frame switch should occur?
    | VBlankNextOnMiss       -- ^ If missed, wait for next vblank
    | VBlankSecondary        -- ^ Secondary display controller
-   | VBlankSignal           -- ^ Send signal instead of blocking, unsupported
-   deriving (Show,Eq,Ord,Enum,BitOffset)
+   deriving (Show,Eq,Ord)
+
+instance BitOffset VBlankFlag where
+   toBitOffset = \case 
+      VBlankSendEventNoBlock -> 0
+      VBlankNextOnMiss       -> 2
+      VBlankSecondary        -> 3
+   fromBitOffset = \case 
+      0 -> VBlankSendEventNoBlock
+      2 -> VBlankNextOnMiss
+      3 -> VBlankSecondary
+      n -> error ("Unknown VBlank flag: " <> show n)
 
 type VBlankFlags = BitSet Word64 VBlankFlag
 

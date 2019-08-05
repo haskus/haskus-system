@@ -8,8 +8,8 @@ module Haskus.System.Linux.Internals.Tables
    )
 where
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
+import Haskus.Number.Word
+import Haskus.Binary.Storable
 import Data.List (sort)
 
 -- | Maximal value in the error table

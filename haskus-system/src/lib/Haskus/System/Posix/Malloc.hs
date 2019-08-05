@@ -9,7 +9,7 @@ module Haskus.System.Posix.Malloc
 where
 
 import Foreign.Ptr (Ptr, nullPtr)
-import Haskus.Format.Binary.Word
+import Haskus.Binary.CTypes
 
 
 -- | Buffer allocation error

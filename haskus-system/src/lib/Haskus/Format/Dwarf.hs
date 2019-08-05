@@ -81,12 +81,13 @@ import Data.Tree (Tree(..))
 
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (Text)
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Put
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Endianness
-import Haskus.Format.Binary.VariableLength
+import Haskus.Binary.Buffer
+import Haskus.Binary.Get
+import Haskus.Binary.Put
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Endianness
+import Haskus.Number.VariableLength
 import Haskus.Utils.Maybe (fromJust,isJust)
 import Haskus.Utils.Flow (forM)
 

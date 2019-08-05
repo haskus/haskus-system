@@ -12,7 +12,7 @@ where
 
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Syscalls
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Foreign.Ptr
 import Haskus.Format.String
 import Haskus.Utils.Types.Generics (Generic)

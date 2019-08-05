@@ -14,9 +14,10 @@ where
 
 import Prelude hiding (takeWhile)
 
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.BufferList
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Buffer
+import Haskus.Binary.BufferList
+import Haskus.Number.Word
+import Haskus.Number.Int
 import Foreign.Ptr (wordPtrToPtr)
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (Text,bufferDecodeUtf8)

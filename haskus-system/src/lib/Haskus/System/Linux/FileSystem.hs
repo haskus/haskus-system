@@ -61,13 +61,14 @@ module Haskus.System.Linux.FileSystem
    )
 where
 
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Bits
+import Haskus.Binary.Storable
+import Haskus.Number.Word
+import Haskus.Number.Int
 import Foreign.Ptr (Ptr, castPtr)
-import Haskus.Format.Binary.BitSet
+import Haskus.Binary.BitSet
 import Haskus.Format.String
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import qualified Haskus.Binary.BitSet as BitSet
 import Haskus.Utils.Flow
 import Haskus.Utils.Maybe
 import Haskus.Utils.Types.Generics (Generic)

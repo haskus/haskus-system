@@ -3,7 +3,7 @@ module Main where
 import Text.Printf
 
 import Haskus.Format.Compression.Algorithms.Huffman
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Buffer
 
 main :: IO ()
 main = do

@@ -94,9 +94,9 @@ where
 import Haskus.Utils.Maybe
 import Haskus.Utils.List (nub)
 import Haskus.Utils.Solver
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.BitField
+import Haskus.Binary.Bits
+import Haskus.Number.Word
+import Haskus.Binary.BitField
 import Haskus.Arch.X86_64.ISA.MicroArch
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Size

@@ -35,9 +35,9 @@ import qualified Data.Map as Map
 
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (Text, getTextUtf8)
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Buffer
+import Haskus.Binary.Get
+import Haskus.Number.Word
 import Haskus.Utils.Flow (when, forM)
 
 

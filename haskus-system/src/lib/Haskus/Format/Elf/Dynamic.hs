@@ -16,10 +16,10 @@ module Haskus.Format.Elf.Dynamic
    )
 where
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Put
-import Haskus.Format.Binary.BitSet (BitOffset,BitSet)
+import Haskus.Number.Word
+import Haskus.Binary.Get
+import Haskus.Binary.Put
+import Haskus.Binary.BitSet (BitOffset,BitSet)
 import Haskus.Format.Elf.PreHeader
 
 data RawDynamicEntry = RawDynamicEntry

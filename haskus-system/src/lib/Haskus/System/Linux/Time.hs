@@ -23,9 +23,10 @@ module Haskus.System.Linux.Time
    )
 where
 
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
+import Haskus.Number.Int
 import Foreign.Ptr
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Syscalls
 import Haskus.Utils.Flow

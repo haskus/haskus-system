@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 893c529effabe4d372bb577597722a4ddd892d82de6dc84eea025d68cff087b6
+-- hash: 2cda9ca7684e840acf65218beb6ad58019f56c2762bb32de53407acaaa16b4ba
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -300,6 +300,27 @@ executable TutEntitiesIDs
 
 executable TutFirstPipeline
   main-is: TutFirstPipeline.hs
+  hs-source-dirs:
+      src/tutorial
+  ghc-options: -Wall -O2 -static -threaded
+  cc-options: -static
+  extra-lib-dirs:
+      ./.system-work/lib
+  ld-options: -static -pthread
+  build-depends:
+      base >=4.8 && <5
+    , haskus-binary
+    , haskus-system
+    , haskus-ui
+    , haskus-utils
+    , haskus-utils-compat
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
+  default-language: Haskell2010
+
+executable TutFrameSwitch
+  main-is: TutFrameSwitch.hs
   hs-source-dirs:
       src/tutorial
   ghc-options: -Wall -O2 -static -threaded

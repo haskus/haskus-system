@@ -15,12 +15,12 @@ where
 import Data.Foldable (toList)
 
 import qualified Haskus.Format.Compression.Algorithms.Deflate as D
-import Haskus.Format.Binary.Get as Get
-import Haskus.Format.Binary.Bits.Order
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.BitSet (BitSet,BitOffset)
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Binary.Get as Get
+import Haskus.Binary.Bits.Order
+import Haskus.Binary.Buffer
+import Haskus.Number.Word
+import Haskus.Binary.BitSet (BitSet,BitOffset)
+import qualified Haskus.Binary.BitSet as BitSet
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (Text,getTextUtf8Nul,unpack)
 import Haskus.Utils.Text (textFormat,hex,(%))

@@ -7,9 +7,9 @@ module Haskus.Format.Elf.Note
 where
 
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Put
+import Haskus.Number.Word
+import Haskus.Binary.Get
+import Haskus.Binary.Put
 import Haskus.Format.Elf.PreHeader
 
 -- | Note

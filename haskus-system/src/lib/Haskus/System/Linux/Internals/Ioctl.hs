@@ -15,10 +15,10 @@ module Haskus.System.Linux.Internals.Ioctl
    )
 where
 
-import Haskus.Format.Binary.BitField
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.BitField
+import Haskus.Binary.Enum
+import Haskus.Number.Word
+import Haskus.Binary.Storable
 
 
 -- =============================================================

@@ -37,10 +37,10 @@ where
 
 import Foreign.Ptr
 import Foreign.Marshal.Alloc (mallocBytes,free)
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Word (Word64, Word32)
-import Haskus.Format.Binary.Bits (shiftR)
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Storable
+import Haskus.Number.Word (Word64, Word32)
+import Haskus.Binary.Bits (shiftR)
+import Haskus.Binary.Buffer
 import Haskus.System.Linux.Error
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle

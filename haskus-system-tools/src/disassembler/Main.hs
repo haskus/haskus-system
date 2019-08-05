@@ -5,7 +5,7 @@ module Main where
 import System.Environment
 import Control.Monad (forM_)
 
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Buffer
 import Haskus.Arch.X86_64.ISA.Mode
 import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.Disassembler

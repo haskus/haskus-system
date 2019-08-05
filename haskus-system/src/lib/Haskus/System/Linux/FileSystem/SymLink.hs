@@ -19,7 +19,7 @@ import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls
 import Haskus.Format.String
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Haskus.Utils.Flow
 
 type ReadSymLinkErrors

@@ -34,10 +34,10 @@ import Haskus.Utils.STM.Future
 import Haskus.Memory.Utils
 import Haskus.Utils.Flow
 import Haskus.Utils.STM
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Number.Word
+import Haskus.Binary.Buffer
+import Haskus.Binary.Storable
 import Haskus.Utils.Text
 import Haskus.Format.String (withCStringLen)
 

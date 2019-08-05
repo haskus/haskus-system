@@ -13,7 +13,7 @@ import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer hiding (space)
 import Data.Void
 
-import Haskus.Format.Binary.Buffer (bufferReadFile)
+import Haskus.Binary.Buffer (bufferReadFile)
 import Haskus.Utils.Text (Text)
 import Haskus.Utils.Flow
 import qualified Haskus.Utils.Text as Text

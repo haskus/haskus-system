@@ -17,10 +17,11 @@ where
 import Haskus.Utils.Maybe (mapMaybe)
 import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.Flow
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Storable
 import Foreign.Ptr
-import Haskus.Format.Binary.BitSet (BitOffset, BitSet, fromBits, toBits)
+import Haskus.Binary.BitSet (BitOffset, BitSet, fromBits, toBits)
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls

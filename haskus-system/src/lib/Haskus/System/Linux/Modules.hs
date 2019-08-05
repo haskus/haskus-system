@@ -15,8 +15,8 @@ where
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Syscalls
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Word
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Number.Word
 import Foreign.Ptr
 import Haskus.Format.String (withCString)
 import Haskus.Utils.Flow

@@ -23,9 +23,9 @@ import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Internals.Arg
 import Haskus.System.Linux.Internals.Handle
 import Haskus.System.Linux.Internals.Fcntl
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Enum
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Number.Int
+import Haskus.Binary.Enum
 import Haskus.Utils.Flow
 
 -- | Fcntl syscall

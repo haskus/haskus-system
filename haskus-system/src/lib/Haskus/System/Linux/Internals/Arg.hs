@@ -4,7 +4,9 @@ module Haskus.System.Linux.Internals.Arg
    )
 where
 
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.CTypes
 import Foreign.Ptr (Ptr, ptrToWordPtr)
 
 

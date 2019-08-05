@@ -20,10 +20,11 @@ module Haskus.System.Linux.FileSystem.Directory
    )
 where
 
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Enum
+import Haskus.Binary.Storable
 import Haskus.Format.String
 
 import Haskus.System.Linux.ErrorCode

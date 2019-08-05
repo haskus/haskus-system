@@ -22,10 +22,10 @@ module Haskus.Format.Elf.Version
    )
 where
 
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Put
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Binary.Get
+import Haskus.Binary.Put
+import Haskus.Number.Word
+import Haskus.Binary.BitSet as BitSet
 import Haskus.Format.Elf.PreHeader
 
 

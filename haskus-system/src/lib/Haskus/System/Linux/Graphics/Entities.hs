@@ -52,11 +52,12 @@ module Haskus.System.Linux.Graphics.Entities
    )
 where
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.FixedPoint
-import Haskus.Format.Binary.Buffer
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Storable
+import Haskus.Number.FixedPoint
+import Haskus.Binary.Buffer
+import qualified Haskus.Binary.BitSet as BitSet
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Linux.Graphics.Mode

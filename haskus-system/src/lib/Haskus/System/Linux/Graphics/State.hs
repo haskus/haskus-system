@@ -102,13 +102,14 @@ import Haskus.Memory.Utils (peekArrays,allocaArrays,withArrays)
 import Haskus.Utils.Flow
 import Haskus.Utils.Maybe
 import qualified Haskus.Utils.List as List
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.BitField
-import Haskus.Format.Binary.FixedPoint
-import Haskus.Format.Binary.Buffer
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Number.FixedPoint
+import Haskus.Binary.Storable
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Enum
+import Haskus.Binary.BitField
+import Haskus.Binary.Buffer
 import Haskus.Format.String 
 import Haskus.Memory.Ptr
 

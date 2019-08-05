@@ -16,10 +16,10 @@ module Haskus.Format.Elf.PreHeader
    )
 where
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Put
-import Haskus.Format.Binary.Endianness
+import Haskus.Number.Word
+import Haskus.Binary.Get
+import Haskus.Binary.Put
+import Haskus.Binary.Endianness
 import Haskus.Utils.Flow (when)
 import Haskus.Utils.Text (textFormat,hex,(%),unpack)
 

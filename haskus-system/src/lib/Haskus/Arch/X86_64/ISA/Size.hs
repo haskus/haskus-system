@@ -15,8 +15,8 @@ module Haskus.Arch.X86_64.ISA.Size
    , getOpSize64
    ) where
 
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Get
+import Haskus.Number.Word
 
 -- | Size
 data Size

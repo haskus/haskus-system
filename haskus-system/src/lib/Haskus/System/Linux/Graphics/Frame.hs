@@ -30,10 +30,10 @@ import Haskus.System.Linux.Handle
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.Graphics.KIO
-import Haskus.Format.Binary.Vector as Vector
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Vector as Vector
+import Haskus.Number.Word
 import Foreign.Ptr
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Haskus.Utils.Tuple
 import Haskus.Utils.Flow
 import Haskus.Utils.List (zip5)

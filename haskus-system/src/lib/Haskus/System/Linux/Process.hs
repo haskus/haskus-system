@@ -27,8 +27,9 @@ module Haskus.System.Linux.Process
 where
 
 import Foreign.Ptr (Ptr, nullPtr)
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Storable
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.ErrorCode
 import Haskus.Utils.Flow

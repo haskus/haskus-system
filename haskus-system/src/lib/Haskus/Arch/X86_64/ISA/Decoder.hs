@@ -24,10 +24,10 @@ import Haskus.Arch.X86_64.ISA.Insn
 import Haskus.Arch.X86_64.ISA.Encoding
 import Haskus.Arch.X86_64.ISA.Operand
 
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.BitField
+import Haskus.Binary.Bits
+import Haskus.Number.Word
+import Haskus.Binary.Get
+import Haskus.Binary.BitField
 
 import Haskus.Utils.Solver
 import Haskus.Utils.List (nub, (\\))

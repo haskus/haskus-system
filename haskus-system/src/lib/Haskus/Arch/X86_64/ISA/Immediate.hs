@@ -16,7 +16,7 @@ import Haskus.Arch.X86_64.ISA.Size
 import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.Common.Immediate
 import Haskus.Utils.Solver
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 
 data ImmType
    = ImmGeneric

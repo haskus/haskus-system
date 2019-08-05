@@ -77,11 +77,13 @@ where
 import Haskus.System.Linux.Ioctl
 import Haskus.System.Linux.Internals.Handle
 import Haskus.System.Linux.Internals.Error
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Vector as Vector
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Vector as Vector
+import Haskus.Binary.Enum
+import Haskus.Binary.CTypes
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Storable
 import Foreign.Ptr
 import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.Flow

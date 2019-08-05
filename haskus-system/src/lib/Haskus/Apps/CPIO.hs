@@ -5,9 +5,9 @@ module Haskus.Apps.CPIO
 where
 
 import Haskus.Format.CPIO
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Put
-import Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Binary.Buffer
+import Haskus.Binary.Put
+import Haskus.Binary.BitSet as BitSet
 import qualified Haskus.Utils.Text as Text
 import Haskus.System.Linux.FileSystem
 import Haskus.Utils.Flow

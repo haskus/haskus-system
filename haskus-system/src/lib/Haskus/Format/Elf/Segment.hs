@@ -16,12 +16,12 @@ where
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Put
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Buffer
+import Haskus.Binary.Get
+import Haskus.Binary.Put
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Enum
+import Haskus.Number.Word
 
 import Haskus.Format.Elf.PreHeader
 import Haskus.Format.Elf.Header

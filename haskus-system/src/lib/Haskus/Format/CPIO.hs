@@ -22,11 +22,11 @@ import qualified Data.ByteString.Char8 as B8
 import Numeric (showHex)
 import Data.Char (ord)
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Put
-import Haskus.Format.Binary.Get
-import Haskus.Format.Binary.Storable
+import Haskus.Number.Word
+import Haskus.Binary.Buffer
+import Haskus.Binary.Put
+import Haskus.Binary.Get
+import Haskus.Binary.Storable
 import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.Flow (forM_,when)
 import Haskus.Utils.Text (Text,getTextUtf8,putTextUtf8)

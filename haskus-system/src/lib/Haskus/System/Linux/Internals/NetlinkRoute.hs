@@ -42,10 +42,11 @@ where
 
 import Haskus.Utils.Types.Generics (Generic)
 import Haskus.Utils.Flow
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.BitSet
+import Haskus.Binary.Storable
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Binary.Enum
+import Haskus.Binary.BitSet
 
 -- =============================================================
 --    From linux/include/uapi/linux/rtnetlink.h

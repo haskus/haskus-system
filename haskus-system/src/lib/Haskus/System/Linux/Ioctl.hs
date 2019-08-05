@@ -46,10 +46,10 @@ module Haskus.System.Linux.Ioctl
 where
 
 import Foreign.Ptr
-import Haskus.Format.Binary.BitField
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.BitField
+import Haskus.Number.Int
+import Haskus.Binary.Buffer
+import Haskus.Binary.Storable
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Handle

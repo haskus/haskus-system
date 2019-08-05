@@ -5,7 +5,7 @@ module Haskus.System.PCI.MakeTable
 where
 
 import Haskus.Utils.Flow
-import Haskus.Format.Binary.Bits
+import Haskus.Binary.Bits
 
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax

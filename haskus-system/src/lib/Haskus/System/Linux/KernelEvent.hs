@@ -9,7 +9,7 @@ module Haskus.System.Linux.KernelEvent
    )
 where
 
-import Haskus.Format.Binary.Buffer
+import Haskus.Binary.Buffer
 import Haskus.Utils.Text (Text)
 import qualified Haskus.Utils.Text as Text
 

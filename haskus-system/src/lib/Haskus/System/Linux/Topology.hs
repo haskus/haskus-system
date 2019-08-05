@@ -26,9 +26,9 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Data.Void
 
-import Haskus.Format.Binary.Buffer (bufferReadFile)
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Bits
+import Haskus.Binary.Buffer (bufferReadFile)
+import Haskus.Number.Word
+import Haskus.Binary.Bits
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.Text (Text)
 import Haskus.Utils.List (isPrefixOf,stripPrefix)

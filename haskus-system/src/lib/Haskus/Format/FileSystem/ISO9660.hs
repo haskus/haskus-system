@@ -35,11 +35,11 @@ where
 -- - Boot Information Table (not standardized)
 --
 
-import Haskus.Format.Binary.Vector
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Endianness
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Vector
+import Haskus.Binary.Enum
+import Haskus.Binary.Endianness
+import Haskus.Number.Word
+import Haskus.Binary.Storable
 import Haskus.Format.String
 import Haskus.Utils.Types
 import Haskus.Utils.Types.Generics (Generic)

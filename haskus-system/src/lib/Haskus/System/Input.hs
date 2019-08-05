@@ -32,14 +32,15 @@ import Haskus.System.Sys
 import Haskus.System.Event
 import Haskus.System.Devices
 import Haskus.Utils.Flow
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import Haskus.System.Linux.Handle
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Internals.Input as Input
 import Haskus.System.Linux.Time (TimeVal(..))
 import Haskus.System.Linux.FileSystem.ReadWrite
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Enum
+import Haskus.Number.Word
+import Haskus.Number.Int
 import qualified Haskus.Utils.Text as Text
 import Haskus.Utils.List (isPrefixOf)
 import Haskus.Utils.Maybe (mapMaybe)

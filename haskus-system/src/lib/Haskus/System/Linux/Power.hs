@@ -22,7 +22,7 @@ import Haskus.System.Linux.Internals.Error
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.Error
 import Haskus.System.Linux.ErrorCode
-import Haskus.Format.Binary.Word (Word64)
+import Haskus.Number.Word (Word64)
 import Haskus.Format.String (withCString)
 import Foreign.Ptr (nullPtr)
 import Haskus.Utils.Flow

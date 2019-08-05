@@ -4,8 +4,8 @@ import Haskus.System
 
 import Haskus.System.Linux.Graphics.PixelFormat
 import Haskus.System.Linux.Graphics.Entities
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Storable
+import Haskus.Number.Word
 
 main :: IO ()
 main = runSys' do

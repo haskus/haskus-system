@@ -58,8 +58,8 @@ where
 
 import Prelude hiding (lookup)
 
-import qualified Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Word
+import qualified Haskus.Binary.BitSet as BitSet
+import Haskus.Number.Word
 import Haskus.Utils.Text (Text)
 import qualified Haskus.Utils.Text as Text
 import Haskus.System.Linux.Error

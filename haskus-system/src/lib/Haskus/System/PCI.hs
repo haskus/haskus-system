@@ -20,7 +20,7 @@ import Data.IntMap.Strict
 
 import Haskus.System.PCI.MakeTable
 import Haskus.System.PCI.Types
-import Haskus.Format.Binary.Bits
+import Haskus.Binary.Bits
 
 -- | List of PCI vendor/device names
 [pcis|src/lib/Haskus/System/PCI/pci.ids|]

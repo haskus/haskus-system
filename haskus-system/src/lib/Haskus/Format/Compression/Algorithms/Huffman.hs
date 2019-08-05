@@ -47,12 +47,12 @@ import qualified Data.PQueue.Prio.Min as PQueue
 import Control.Arrow (first)
 
 import Haskus.Utils.Tuple (swap)
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Bits
-import Haskus.Format.Binary.Bits.Put
-import Haskus.Format.Binary.Bits.Get as BitGet
-import Haskus.Format.Binary.Bits.Order
+import Haskus.Number.Word
+import Haskus.Binary.Buffer
+import Haskus.Binary.Bits
+import Haskus.Binary.Bits.Put
+import Haskus.Binary.Bits.Get as BitGet
+import Haskus.Binary.Bits.Order
 import Haskus.Utils.Text (Text)
 import qualified Haskus.Utils.Text as Text
 

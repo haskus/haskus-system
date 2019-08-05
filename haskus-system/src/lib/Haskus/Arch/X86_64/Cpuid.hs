@@ -35,11 +35,11 @@ module Haskus.Arch.X86_64.Cpuid
    )
    where
 
-import Haskus.Format.Binary.BitField
-import Haskus.Format.Binary.BitSet as BitSet
-import Haskus.Format.Binary.Union
-import Haskus.Format.Binary.Vector as V
-import Haskus.Format.Binary.Bits
+import Haskus.Binary.BitField
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Union
+import Haskus.Binary.Vector as V
+import Haskus.Binary.Bits
 import Haskus.Format.String
 import Haskus.Utils.Text as Text
 import Haskus.Utils.Tuple (fromTuple4)
@@ -74,7 +74,7 @@ cpuid2 (W32# eax) (W32# ecx) =
 -- Implementation using Haskell FFI
 --------------------------------------------------
 
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 import System.IO.Unsafe (unsafePerformIO)
 
 foreign import ccall unsafe "x86_64_cpuid_ffi" cpuid_ :: Word32 -> Ptr Word32 -> IO ()

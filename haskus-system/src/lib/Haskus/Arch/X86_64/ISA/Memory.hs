@@ -56,7 +56,7 @@ import Haskus.Arch.Common.Register
 import Haskus.Utils.Solver
 import Haskus.Utils.Maybe
 import Haskus.Utils.Flow
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 
 import Control.Applicative
 

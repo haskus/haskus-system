@@ -25,9 +25,9 @@ import qualified Foreign.C.String as FS
 import Foreign.C.Types (CChar(..))
 import Foreign.Ptr
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Storable
-import Haskus.Format.Binary.Vector as Vec
+import Haskus.Number.Int
+import Haskus.Binary.Storable
+import Haskus.Binary.Vector as Vec
 import Haskus.Utils.Types
 import Haskus.Utils.Monad
 import Haskus.Utils.Flow

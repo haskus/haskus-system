@@ -5,7 +5,8 @@
 module Haskus.Arch.X86_64.Linux.Syscalls where
 
 import Haskus.Arch.X86_64.Linux.Syscall
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
+import Haskus.Number.Int
 import Haskus.Format.String (CString)
 import Foreign.Ptr
 import Haskus.Arch.X86_64.Linux.SyscallTable

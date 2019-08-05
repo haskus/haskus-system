@@ -19,7 +19,7 @@ import Haskus.Utils.STM
 import Haskus.System.Sys
 import Haskus.System.Process
 import Foreign.Ptr
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Storable
 
 -- | Create a new thread reading events and putting them in a TChan
 newEventReader :: forall a. Storable a => Handle -> Sys (TChan a)

@@ -11,10 +11,10 @@ module Haskus.System.Linux.Graphics.Event
    )
 where
 
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 import Foreign.Ptr
-import Haskus.Format.Binary.Buffer
-import Haskus.Format.Binary.Storable
+import Haskus.Binary.Buffer
+import Haskus.Binary.Storable
 import Haskus.System.Linux.Graphics.KIO
 import Haskus.Utils.Monad
 import Haskus.Utils.Flow

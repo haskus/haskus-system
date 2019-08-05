@@ -31,8 +31,8 @@ import Haskus.Arch.Common.Register
 import Haskus.Arch.Common.Memory
 import Haskus.Arch.Common.Immediate
 
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.Bits
+import Haskus.Number.Word
+import Haskus.Binary.Bits
 import Haskus.Utils.Embed.ByteString
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow

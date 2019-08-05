@@ -14,7 +14,7 @@ import Haskus.System.Linux.Graphics.Mode
 import Haskus.System.Linux.Graphics.Frame
 import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Linux.ErrorCode
-import Haskus.Format.Binary.Word
+import Haskus.Number.Word
 import Haskus.Utils.Flow
 
 -- | How to configure frame source with setController

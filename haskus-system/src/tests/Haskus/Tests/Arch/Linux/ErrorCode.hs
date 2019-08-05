@@ -7,8 +7,8 @@ import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 
 import Haskus.System.Linux.ErrorCode
-import Haskus.Format.Binary.Enum
-import Haskus.Format.Binary.Word
+import Haskus.Binary.Enum
+import Haskus.Number.Word
 
 testsErrorCode :: TestTree
 testsErrorCode = testGroup "Error codes"

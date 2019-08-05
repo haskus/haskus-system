@@ -40,9 +40,10 @@ import Haskus.System.Linux.Graphics.KIO
 import Haskus.System.Graphics
 import Haskus.Utils.Flow
 import Haskus.Utils.List as List
-import Haskus.Format.Binary.Word
-import Haskus.Format.Binary.FixedPoint
-import qualified Haskus.Format.Binary.BitSet as BitSet
+import Haskus.Number.Word
+import Haskus.Number.Int
+import Haskus.Number.FixedPoint
+import qualified Haskus.Binary.BitSet as BitSet
 import Haskus.Memory.Ptr
 
 import qualified Data.Map.Strict as Map

@@ -8,7 +8,6 @@ import Haskus.System.Linux.Graphics.Entities
 import Haskus.System.Graphics.Config
 import Haskus.Binary.Storable
 import Haskus.Number.Word
-import Haskus.Binary.Bits
 
 main :: IO ()
 main = runSys' do
@@ -17,6 +16,9 @@ main = runSys' do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards \card -> do
+      onEvent (graphicCardChan card) \ev -> do
+         writeStrLn term (show ev)
+
       forEachConnectedDisplay card \conn display -> do
          -- get a primary plane
          plane <- getEntities card
@@ -34,9 +36,12 @@ main = runSys' do
          -- the list)
          let mode = head (displayModes display)
          frame <- createGenericFullScreenFrame card mode pixelFormat 0
-         forEachGenericFramePixel frame 0 \x y ptr -> do
-            let col = 0x310000 + (x .&. 0xFF) `shiftL` 8 + y .&. 0xFF
-            poke ptr (col :: Word32)
+         let render col = do
+               forEachGenericFramePixel frame 0 \_x _y ptr -> do
+                  poke ptr (col :: Word32)
+               render (col + 0x10)
+         sysFork "Test" (render 0)
+            
 
          -- select a controller
          let ctrlID = planePossibleControllers plane

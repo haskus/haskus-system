@@ -10,7 +10,7 @@
 
 import Haskus.System
 
-import qualified Haskus.Format.Binary.Buffer as B
+import qualified Haskus.Binary.Buffer as B
 
 import Haskus.System.Linux.Info
 import Haskus.System.Linux.Graphics.State
