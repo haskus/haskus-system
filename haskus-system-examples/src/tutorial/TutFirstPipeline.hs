@@ -43,7 +43,7 @@ main = runSys' do
                       |> head
 
          -- build the pipeline
-         assertLogShowErrorE "Config" <| withModeBlob card mode \modeBlobID ->
+         assertLogShowErrorE "Initialize the pipeline" <| withModeBlob card mode \modeBlobID ->
             configureGraphics card Commit EnableVSync EnableFullModeset do
                setConnectorSource conn ctrlID -- connector  <-> controller
                setPlaneTarget plane ctrlID    -- controller <-> plane

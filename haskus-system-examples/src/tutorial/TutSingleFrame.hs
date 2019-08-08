@@ -37,11 +37,10 @@ main = runSys' do
          let mode = head (displayModes display)
 
          -- select a controller
-         let ctrlID = planePossibleControllers plane
+         let 
+            ctrlID = planePossibleControllers plane
                       |> head
 
-
-         let
             -- build the pipeline
             initPipeline frame = assertLogShowErrorE "Initialize pipeline" <| do
                withModeBlob card mode \modeBlobID ->
@@ -56,30 +55,21 @@ main = runSys' do
                      -- enable the controller
                      enableController ctrlID True
 
-            -- switch frame
-            switchFrame frame = assertLogShowErrorE "Switch frame" <| do
-               configureGraphics card Commit EnableVSync DisableFullModeset do
-                  setPlaneSource plane frame     -- plane      <-> frame
+            render frame col = do
+              forEachGenericFramePixel frame 0 \_x _y ptr -> do
+                 poke ptr (col :: Word32)
 
-         frame1 <- createGenericFullScreenFrame card mode pixelFormat 0
-         frame2 <- createGenericFullScreenFrame card mode pixelFormat 0
+         frame <- createGenericFullScreenFrame card mode pixelFormat 0
 
-         let render frame col = do
-               forEachGenericFramePixel frame 0 \_x _y ptr -> do
-                  poke ptr (col :: Word32)
-
-             renderLoop b col = do
-               let frame = if b then frame1 else frame2
+         let renderLoop col = do
                render frame col
-               switchFrame frame
-               renderLoop (not b) (col + 0x10)
+               renderLoop (col + 0x10)
 
-         render frame1 0
-         initPipeline frame1
+         render frame 0
+         initPipeline frame
 
-         sysFork "Render loop" (renderLoop False 0)
-
-
+         sysFork "Render loop" (renderLoop 0)
+            
 
    waitForKey term
    powerOff

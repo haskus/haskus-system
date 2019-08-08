@@ -131,6 +131,11 @@ executables:
       source-dirs: src/tutorial
       other-modules: []
 
+   TutSingleFrame:
+      main: TutSingleFrame.hs
+      source-dirs: src/tutorial
+      other-modules: []
+
    TutFrameSwitch:
       main: TutFrameSwitch.hs
       source-dirs: src/tutorial
