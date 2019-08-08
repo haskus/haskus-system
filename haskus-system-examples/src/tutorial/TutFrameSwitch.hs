@@ -16,9 +16,6 @@ main = runSys' do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards \card -> do
-      onEvent (graphicCardChan card) \ev -> do
-         writeStrLn term (show ev)
-
       forEachConnectedDisplay card \conn display -> do
          -- get a primary plane
          plane <- getEntities card
@@ -59,7 +56,7 @@ main = runSys' do
             -- switch frame
             switchFrame frame = assertLogShowErrorE "Switch frame" <| do
                configureGraphics card Commit EnableVSync DisableFullModeset do
-                  setPlaneSource plane frame     -- plane      <-> frame
+                  setPlaneSource plane frame
 
          frame1 <- createGenericFullScreenFrame card mode pixelFormat 0
          frame2 <- createGenericFullScreenFrame card mode pixelFormat 0
@@ -72,7 +69,7 @@ main = runSys' do
                let frame = if b then frame1 else frame2
                render frame col
                switchFrame frame
-               renderLoop (not b) (col + 0x10)
+               renderLoop (not b) (col + 10)
 
          render frame1 0
          initPipeline frame1

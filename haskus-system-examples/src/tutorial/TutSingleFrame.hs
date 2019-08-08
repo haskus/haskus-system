@@ -16,9 +16,6 @@ main = runSys' do
    cards <- loadGraphicCards (systemDeviceManager sys)
    
    forM_ cards \card -> do
-      onEvent (graphicCardChan card) \ev -> do
-         writeStrLn term (show ev)
-
       forEachConnectedDisplay card \conn display -> do
          -- get a primary plane
          plane <- getEntities card
@@ -63,7 +60,7 @@ main = runSys' do
 
          let renderLoop col = do
                render frame col
-               renderLoop (col + 0x10)
+               renderLoop (col + 10)
 
          render frame 0
          initPipeline frame
