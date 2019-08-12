@@ -113,9 +113,7 @@ main = runSys' do
                         , 0, 1, 0
                         ]
 
-            --shapes = [shapeI, shapeO, shapeL, shapeS, shapeZ, shapeJ, shapeT]
-            shapes = [shapeI, shapeO]
-
+            shapes = [shapeI, shapeO, shapeL, shapeS, shapeZ, shapeJ, shapeT]
 
             randomShape = randomRIO (0,length shapes-1)
                            |> liftIO
@@ -123,9 +121,10 @@ main = runSys' do
 
             randomPosX w = randomRIO (0,gameWidth - 1 - w) |> liftIO
 
-            newIORef     x = liftIO (IORef.newIORef x)
-            writeIORef r x = liftIO (IORef.writeIORef r x)
-            readIORef  r   = liftIO (IORef.readIORef r)
+            newIORef     x  = liftIO (IORef.newIORef x)
+            writeIORef r x  = liftIO (IORef.writeIORef r x)
+            readIORef  r    = liftIO (IORef.readIORef r)
+            modifyIORef r f = liftIO (IORef.modifyIORef r f)
 
          gameArray <- liftIO <| newArray @IOUArray ((0,0),(gameWidth-1,gameHeight-1)) (0 :: Word32)
          currentShape <- newIORef =<< randomShape
@@ -133,10 +132,15 @@ main = runSys' do
          currentPosY  <- newIORef (-1)
          currentFallPeriod <- newIORef (TimeSpec 1 0)
          lastDropTime <- newIORef (TimeSpec 0 0)
+         score <- newIORef (0 :: Word)
 
          let
             readGameArray x y    = liftIO (readArray gameArray (x,y))
             writeGameArray x y e = liftIO (writeArray gameArray (x,y) e)
+
+            incScore = do
+               modifyIORef score (+1)
+               modifyIORef currentFallPeriod (fromNanoSecs . (`div` 100) . (* 95) . toNanoSecs)
 
             popShape = do
                sh <- randomShape
@@ -146,7 +150,8 @@ main = runSys' do
                writeIORef currentPosY 0
                valid <- isValidMove id id
                when (not valid) do
-                  writeStrLn term "Game over"
+                  sc <- readIORef score
+                  writeStrLn term ("Game over. Score: " ++ show sc)
                   powerOff_
 
             isValidPosition x y
@@ -183,6 +188,15 @@ main = runSys' do
                   writeIORef currentPosY (fy sy)
                pure b
 
+            tryRotate = do
+               sx <- readIORef currentPosX
+               sy <- readIORef currentPosY
+               sh <- readIORef currentShape
+               let rsh = Shape (rotate (shapeArray sh))
+               isValidShapePosition rsh sx sy >>= \case
+                  True  -> writeIORef currentShape rsh
+                  False -> pure () -- TODO: try rotating more cleverly
+
 
             block  c  = rasterizeDiagram (dims2D @Float 20 20) do
                            rect 20 20 |> lc white |> fc c
@@ -201,6 +215,7 @@ main = runSys' do
                   KeyLeft  -> void <| tryMove (\x -> x-1) id
                   KeyRight -> void <| tryMove (+1) id
                   Down     -> void <| replicateM 4 (tryMove id (+1))
+                  Up       -> tryRotate
                   _        -> pure ()
                _ -> pure ()
 
@@ -257,6 +272,7 @@ main = runSys' do
                      | y == fy = do
                         let off' = off+1
                         copyLineFrom (y-off') ys y
+                        incScore
                         removeLines off' ys (y-1)
 
                   removeLines off ys y = do
@@ -323,3 +339,9 @@ newShape x y xs = Shape (transpose (listArray ((0,0),(y-1,x-1)) (fmap (/=0) xs))
 
 transpose :: Array (Int,Int) e -> Array (Int,Int) e
 transpose a = array (second swap (bounds a)) (fmap (first swap) (assocs a))
+
+rotate :: Array (Int,Int) e -> Array (Int,Int) e
+rotate a = array (second swap (bounds a)) (fmap (first f) (assocs a))
+   where
+      (_w,h)  = snd (bounds a)
+      f (x,y) = (h-y,x)
