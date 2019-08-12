@@ -211,7 +211,10 @@ main = runSys' do
          forM_ inputs \inp -> onEvent (inputDeviceBundles inp) \(InputEventBundle events) -> do
             forM_ (fmap inputEventType events) \case
                InputKeyEvent KeyPress k -> case k of
-                  Esc      -> powerOff_
+                  Esc      -> do
+                     sc <- readIORef score
+                     writeStrLn term ("Quit!. Score: " ++ show sc)
+                     powerOff_
                   KeyLeft  -> void <| tryMove (\x -> x-1) id
                   KeyRight -> void <| tryMove (+1) id
                   Down     -> void <| replicateM 4 (tryMove id (+1))
@@ -319,6 +322,7 @@ main = runSys' do
                let frame = if b then frame1 else frame2
                render frame
                switchFrame frame
+               threadDelayMilliSec 1
                renderLoop (not b)
 
          render frame1
