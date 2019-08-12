@@ -140,3 +140,13 @@ executables:
       main: TutFrameSwitch.hs
       source-dirs: src/tutorial
       other-modules: []
+
+   TutTetris:
+      main: TutTetris.hs
+      source-dirs: src/tutorial
+      other-modules: []
+      dependencies:
+         - array
+         - random
+         - JuicyPixels
+         - clock

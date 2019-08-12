@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 41913c08757456547f919ad8ddea5832ea146c29ecf6763800f0031d151f5855
+-- hash: a2d35309c20971ae551d7a1a52b96b8e8892ccfb771812de86717987479b75a7
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -401,6 +401,31 @@ executable TutSingleFrame
     , haskus-utils-data
     , haskus-utils-types
     , haskus-utils-variant
+  default-language: Haskell2010
+
+executable TutTetris
+  main-is: TutTetris.hs
+  hs-source-dirs:
+      src/tutorial
+  ghc-options: -Wall -O2 -static -threaded
+  cc-options: -static
+  extra-lib-dirs:
+      ./.system-work/lib
+  ld-options: -static -pthread
+  build-depends:
+      JuicyPixels
+    , array
+    , base >=4.8 && <5
+    , clock
+    , haskus-binary
+    , haskus-system
+    , haskus-ui
+    , haskus-utils
+    , haskus-utils-compat
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
+    , random
   default-language: Haskell2010
 
 executable VDSO
