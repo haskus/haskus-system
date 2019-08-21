@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- | Instruction encoding
@@ -104,10 +105,13 @@ import Haskus.Arch.X86_64.ISA.Solver
 import Haskus.Arch.X86_64.ISA.Register
 import Haskus.Arch.X86_64.ISA.Memory
 import Haskus.Arch.X86_64.ISA.Operand
+import Haskus.Arch.Common.Solver
 import Haskus.Arch.Common.Register
 import Haskus.Utils.Flow
 
 import Haskus.Utils.List ((\\))
+import qualified Data.Set as Set
+import Data.Set (Set)
 import Control.Applicative
 
 -- | Instruction encoding
@@ -229,13 +233,13 @@ data ValidMod
    | ModeOnlyMem  -- ^ Only memory
    | ModeBoth     -- ^ Register and memory
    | ModeNone     -- ^ None
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | ModRM.mod only supports the given value
 encValidModRMMode :: Encoding -> ValidMod
 encValidModRMMode e = case ots of
       []  -> ModeNone
-      [x] -> foldl comb ModeNone (fmap toM (getTerminals x))
+      [x] -> foldl comb ModeNone (Set.map toM (getTerminals x))
       _   -> error ("encValidModRMMode: more than one ModRM.rm param: " ++ show ots)
    where
       ots = opFam <$> filter ((== S_RM) . opStore) (encOperands e)
@@ -265,15 +269,18 @@ encMayHaveMemoryOperand e = memRm || memOp
          ModeBoth    -> True
       memOp = encOperands e
          ||> (\(OperandSpec _ x _) -> x)
-         |> concatMap getTerminals
+         |> fmap getTerminals
+         |> Set.unions
+         |> Set.toList
          |> any isTMem
       isTMem (T_Mem _) = True
       isTMem _         = False
 
 -- | Return predicates of the encoding
-encPredicates :: Encoding -> [X86Pred]
-encPredicates enc =
-   concatMap getPredicates (encOperands enc)
+encPredicates :: Encoding -> Set X86Pred
+encPredicates enc = encOperands enc
+   |> fmap getPredicates
+   |> Set.unions
 
 
 -- | Indicate if prefix 66 (override operand-size) can be used

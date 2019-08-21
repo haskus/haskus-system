@@ -35,7 +35,7 @@ import Haskus.Arch.Common.Solver
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow
 import Haskus.Utils.Maybe
-import Haskus.Utils.List (nub)
+import qualified Data.Set as Set
 
 -- | Register
 data Reg banks rt = Reg
@@ -116,7 +116,7 @@ deriving instance (Show p, Show e, Show b, Show rt) => Show (RegFam (NT p e) b r
 deriving instance (Eq p, Eq e, Eq b, Eq rt)         => Eq   (RegFam (NT p e) b rt)
 deriving instance (Ord p, Ord e, Ord b, Ord rt)     => Ord  (RegFam (NT p e) b rt)
 
-instance (Ord p, Eq e, Eq b, Eq p, Eq rt) => Predicated (RegFam (NT p e) b rt) where
+instance (Ord b, Ord rt, Ord p, Eq e, Eq b, Eq p, Eq rt) => Predicated (RegFam (NT p e) b rt) where
    type Pred     (RegFam (NT p e) b rt) = p
    type PredErr  (RegFam (NT p e) b rt) = e
    type PredTerm (RegFam (NT p e) b rt) = RegFam T b rt
@@ -143,20 +143,20 @@ instance (Ord p, Eq e, Eq b, Eq p, Eq rt) => Predicated (RegFam (NT p e) b rt) w
              (simplifyPredicates oracle o)
              (simplifyPredicates oracle t)
 
-   getTerminals (RegFam bs is ss os ts) =
-      [ RegFam b i s o t | b <- getTerminals bs
-                         , i <- getTerminals is
-                         , s <- getTerminals ss
-                         , o <- getTerminals os
-                         , t <- getTerminals ts
+   getTerminals (RegFam bs is ss os ts) = Set.fromList
+      [ RegFam b i s o t | b <- Set.toList $ getTerminals bs
+                         , i <- Set.toList $ getTerminals is
+                         , s <- Set.toList $ getTerminals ss
+                         , o <- Set.toList $ getTerminals os
+                         , t <- Set.toList $ getTerminals ts
       ]
-   getPredicates (RegFam b i s o t) =
-      nub $ concat [ getPredicates b
-                   , getPredicates i
-                   , getPredicates s
-                   , getPredicates o
-                   , getPredicates t
-                   ]
+   getPredicates (RegFam b i s o t) = Set.unions
+      [ getPredicates b
+      , getPredicates i
+      , getPredicates s
+      , getPredicates o
+      , getPredicates t
+      ]
 
 
 -- | Test if a register match a family
@@ -215,7 +215,7 @@ regFamToReg' fam = fromMaybe err (regFamToReg fam)
       err = error ("Cannot fixup family: " ++ show fam)
 
 -- | Reduce a qualifier as much as possible
-reducePSet :: (Eq e, Eq p, Eq a, Ord p) => PredOracle p -> PSet e p a -> PSet e p a
+reducePSet :: (Eq e, Eq p, Eq a, Ord p, Ord a) => PredOracle p -> PSet e p a -> PSet e p a
 reducePSet oracle x = case reducePredicates oracle x of
       NoMatch          -> liftTerminal None
       MatchDiverge _   -> liftTerminal None
@@ -224,7 +224,7 @@ reducePSet oracle x = case reducePredicates oracle x of
       DontMatch a      -> a
 
 -- | Match a qualifier
-matchPSet :: (Eq e, Eq p, Eq a, Ord p) => PredOracle p -> a -> PSet e p a -> Bool
+matchPSet :: (Eq e, Eq p, Eq a, Ord p, Ord a) => PredOracle p -> a -> PSet e p a -> Bool
 matchPSet fp y q = case reducePredicates fp q of
    NoMatch            -> False
    MatchDiverge _     -> False
@@ -233,7 +233,7 @@ matchPSet fp y q = case reducePredicates fp q of
    DontMatch _        -> False
 
 -- | Try to set the value of a PSet if it matches. Otherwise leave it untouched
-trySetPSet :: (Eq e, Eq p, Eq a, Ord p) => PredOracle p -> a -> PSet e p a -> PSet e p a
+trySetPSet :: (Eq e, Eq p, Eq a, Ord p, Ord a) => PredOracle p -> a -> PSet e p a -> PSet e p a
 trySetPSet oracle a q = fmap f q
    where
       f | matchPSet oracle a q = \_ -> Singleton a

@@ -52,6 +52,7 @@ import Data.Char (toUpper)
 import Data.Maybe
 import qualified Data.Map    as Map
 import qualified Data.Set    as Set
+import Data.Set (Set)
 import qualified Data.Vector as V
 
 import Haskus.Web.Html
@@ -384,7 +385,7 @@ showPredTable moracle showValue a = do
       Left r   -> showValue r
       Right [] -> toHtml ("Error: empty table! " ++ show a)
       Right rs -> do
-         let modePreds = filter X86.isModePredicate (getPredicates a)
+         let modePreds = filter X86.isModePredicate (Set.toList (getPredicates a))
          if not (null modePreds)
             then do
                let
@@ -419,12 +420,12 @@ showPredicateTable :: forall a.
    , Eq (PredTerm a)
    , Predicated a
    ) => (PredTerm a -> Html ())
-     -> [Pred a]
+     -> Set (Pred a)
      -> [(PredOracle (Pred a),PredTerm a)]
      -> Html ()
 showPredicateTable showValue preds rs =
    table_ [class_ "predicatetable"] do
-      let ps = List.sort preds
+      let ps = List.sort (Set.toList preds)
       tr_ $ do
          forM_ ps $ \p -> th_ $ toHtml (showPredicate p)
          th_ "Value"

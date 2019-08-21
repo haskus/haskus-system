@@ -20,7 +20,7 @@ where
 import Haskus.Arch.Common.Solver
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow
-import Haskus.Utils.List (nub)
+import qualified Data.Set as Set
 
 -- | Data in memory 
 data Mem addr mtype = Mem
@@ -63,7 +63,7 @@ deriving instance (Show p, Show e, Show a, Show m) => Show (MemFam (NT p e) a m)
 deriving instance (Eq p, Eq e, Eq a, Eq m)         => Eq   (MemFam (NT p e) a m)
 deriving instance (Ord p, Ord e, Ord a, Ord m)     => Ord  (MemFam (NT p e) a m)
 
-instance (Ord p, Eq e, Eq a, Eq m, Eq p) => Predicated (MemFam (NT p e) a m) where
+instance (Ord p, Eq e, Eq a, Eq m, Eq p, Ord a, Ord m) => Predicated (MemFam (NT p e) a m) where
    type Pred     (MemFam (NT p e) a m) = p
    type PredErr  (MemFam (NT p e) a m) = e
    type PredTerm (MemFam (NT p e) a m) = MemFam T a m
@@ -84,15 +84,15 @@ instance (Ord p, Eq e, Eq a, Eq m, Eq p) => Predicated (MemFam (NT p e) a m) whe
              (simplifyPredicates oracle t)
              (simplifyPredicates oracle s)
 
-   getTerminals (MemFam as ts ss) =
-      [ MemFam a t s| a <- getTerminals as
-                    , t <- getTerminals ts
-                    , s <- getTerminals ss
+   getTerminals (MemFam as ts ss) = Set.fromList
+      [ MemFam a t s| a <- Set.toList $ getTerminals as
+                    , t <- Set.toList $ getTerminals ts
+                    , s <- Set.toList $ getTerminals ss
       ]
 
-   getPredicates (MemFam a t s) =
-      nub $ concat [ getPredicates a
-                   , getPredicates t
-                   , getPredicates s
-                   ]
+   getPredicates (MemFam a t s) = Set.unions
+      [ getPredicates a
+      , getPredicates t
+      , getPredicates s
+      ]
 

@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- | Operand
@@ -35,7 +36,7 @@ import Haskus.Arch.X86_64.ISA.Immediate
 import Haskus.Arch.X86_64.ISA.Memory
 import Haskus.Utils.Solver
 import Haskus.Utils.Flow
-import Haskus.Utils.List (nub)
+import qualified Data.Set as Set
 
 
 
@@ -178,15 +179,16 @@ instance Predicated (OperandFam (NT X86Pred X86Err)) where
       T_Imm x      -> T_Imm (simplifyPredicates oracle x)
 
    getTerminals = \case
-      T_Pair xs ys  -> [ T_Pair x y   | x <- getTerminals xs
-                                      , y <- getTerminals ys
+      T_Pair xs ys  -> Set.fromList
+                       [ T_Pair x y   | x <- Set.toList $ getTerminals xs
+                                      , y <- Set.toList $ getTerminals ys
                        ]
-      T_Mem xs      -> [ T_Mem x      | x <- getTerminals xs ]
-      T_Reg xs      -> [ T_Reg x      | x <- getTerminals xs ]
-      T_Imm xs      -> [ T_Imm x      | x <- getTerminals xs ]
+      T_Mem xs      -> Set.fromList [ T_Mem x      | x <- Set.toList $ getTerminals xs ]
+      T_Reg xs      -> Set.fromList [ T_Reg x      | x <- Set.toList $ getTerminals xs ]
+      T_Imm xs      -> Set.fromList [ T_Imm x      | x <- Set.toList $ getTerminals xs ]
 
    getPredicates = \case
-      T_Pair xs ys  -> nub $ concat [ getPredicates xs, getPredicates ys ]
+      T_Pair xs ys  -> Set.union (getPredicates xs) (getPredicates ys)
       T_Mem xs      -> getPredicates xs
       T_Reg xs      -> getPredicates xs
       T_Imm xs      -> getPredicates xs
@@ -204,7 +206,7 @@ data OperandStorage
    | S_Implicit   -- ^ Implicit
    | S_Vvvv       -- ^ Operand stored in Vex.vvvv field
    | S_OpcodeLow3 -- ^ Operand stored in opcode 3 last bits
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Operand specification (parameterized)
 data OperandSpec t = OperandSpec
@@ -215,6 +217,12 @@ data OperandSpec t = OperandSpec
 
 deriving instance (Show (OperandSpec T))
 deriving instance (Show (OperandSpec (NT X86Pred X86Err)))
+
+deriving instance (Eq (OperandSpec T))
+deriving instance (Eq (OperandSpec (NT X86Pred X86Err)))
+
+deriving instance (Ord (OperandSpec T))
+deriving instance (Ord (OperandSpec (NT X86Pred X86Err)))
 
 -- | Predicated operand spec
 type OperandSpecP = OperandSpec (NT X86Pred X86Err)
@@ -248,13 +256,13 @@ instance Predicated (OperandSpec (NT X86Pred X86Err)) where
       -- need to fmap "simplifyPredicates"
       OperandSpec m (simplifyPredicates oracle (fmap (simplifyPredicates oracle) t)) s
 
-   getTerminals (OperandSpec m ts s) =
-      [ OperandSpec m t s | os <- getTerminals ts
-                          , t  <- getTerminals os
+   getTerminals (OperandSpec m ts s) = Set.fromList
+      [ OperandSpec m t s | os <- Set.toList $ getTerminals ts
+                          , t  <- Set.toList $ getTerminals os
                           ]
 
    getPredicates (OperandSpec _ t _) =
-      nub (getPredicates t ++ concatMap getPredicates (getTerminals t))
+      Set.unions (getPredicates t : fmap getPredicates (Set.toList (getTerminals t)))
 
 -- | Operand access mode
 data AccessMode
@@ -262,7 +270,7 @@ data AccessMode
    | RW         -- ^ Read-write
    | WO         -- ^ Write-only
    | NA         -- ^ Meta use of the operand
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 
 -- | Is the operand encoding an immediate?
