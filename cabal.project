@@ -1,0 +1,5 @@
+packages:
+   haskus-system/
+   haskus-system-build/
+   haskus-system-tools/
+   haskus-system-examples/
