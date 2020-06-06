@@ -17,7 +17,6 @@ import Control.Monad.Reader
 import Data.Colour.RGBSpace
 import Data.Colour.RGBSpace.HSV
 import Data.List                (nub)
-import Data.Semigroup           ((<>))
 import Graphics.Rasterific.Linear
 import Graphics.Rasterific.Transformations
 import qualified Numeric.Noise.Perlin     as P

@@ -33,8 +33,6 @@ import qualified Haskus.Utils.Map as Map
 
 import Data.Colour.Names (blue)
 
-import Data.Monoid ((<>))
-import Control.Monad (when)
 import Data.List (intersperse)
 import Data.ByteString (ByteString)
 import Codec.Picture.Types

@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 module Main where
 
 import ElfCmdLine (Options(..), getOptions)
@@ -31,73 +32,77 @@ import Haskus.Arch.X86_64.Disassembler
 
 import Haskus.Binary.Buffer
 import qualified Haskus.Utils.Text as Text
+import qualified Data.Text.Encoding as Text
+import qualified Data.Text.Lazy.Encoding as Text.Lazy
 import Haskus.Utils.Text (Text,textFormat,int,stext,hex,(%))
 import Haskus.Binary.BitSet (BitSet,BitOffset)
 import qualified Haskus.Binary.BitSet as BitSet
 import Haskus.Number.Word
 import Haskus.Utils.Embed.ByteString
 import Haskus.Web.Html
+import qualified Haskus.Web.Server as Server
 import Haskus.Utils.Flow
 
 import Control.Monad
-import Happstack.Server
 import Data.Maybe
 import Data.List (intersperse)
 import Data.Tree (drawTree)
+import Text.Read (readMaybe)
 import qualified Data.Vector as Vector
 import qualified Data.List as List
 import qualified Data.Set as Set
-import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as LBS
 
 main :: IO ()
 main = do
    opts <- getOptions
    elf <- readElf (optpath opts)
-   server (optpath opts) elf (nullConf { port = optport opts} )
+   server (optpath opts) elf (optport opts)
 
-server :: FilePath -> Elf -> Conf -> IO ()
-server pth elf conf = do
-   Text.putStrLn (textFormat ("Starting Web server at localhost: " % int) (port conf))
 
-   let ok' = ok . toResponse . renderBS . appTemplate
+server :: FilePath -> Elf -> Server.Port -> IO ()
+server pth elf port = do
+   Text.putStrLn (textFormat ("Starting Web server at localhost: " % int) port)
 
-   simpleHTTP conf $ msum
-      [ dir "css" $ dir "style.css" $ ok css
+   Server.run port $ \req respond -> do
+      let okHtmlLBS lbs  = respond (Server.responseLBS Server.ok200 [(Server.hContentType,"text/html")] lbs)
+      let okHtmlApp      = okHtmlLBS . renderBS . appTemplate
+      let fromText       = readMaybe . Text.unpack
+      let notFound       = respond (Server.responseLBS Server.notFound404 [] (Text.Lazy.encodeUtf8 "404 - Not found"))
 
-      , dir "all" $ nullDir >> ok' (allPage pth elf)
+      case Server.pathInfo req of
+         []                   -> okHtmlApp (welcomePage pth elf)
+         [ "css","style.css"] -> respond css
+         [ "all"]             -> okHtmlApp (allPage pth elf)
 
-      -- Section specific
-      , dir "section" $ nullDir >> ok' (sectionsPage pth elf)
+         -- Section specific
+         [ "section" ]                       -> okHtmlApp (sectionsPage pth elf)
+         "section" : (fromText -> Just secnum) : pths -> do
+            -- retrieve section by index
+            sec <- lookupMaybe (getSectionByIndex elf secnum)
+            case pths of
+               []            -> okHtmlApp (sectionPage pth elf secnum sec)
+               -- dump section content
+               [ "content" ] -> do
+                  -- select suggested output filename by the browser
+                  let filename = textFormat ("section" % int % ".bin") (secnum :: Int)
+                      disp     = textFormat ("attachment; filename=\"" % stext % "\"") filename
+                  respond (Server.responseLBS
+                              Server.ok200
+                              [ (Server.hContentDisposition, Text.encodeUtf8 disp)
+                              , (Server.hContentType, "application/octet-stream")
+                              ]
+                              (LBS.fromStrict $ bufferUnpackByteString $ getSectionContentBuffer elf sec))
 
-      , dir "section" $ path $ \secnum -> do
-         -- retrieve section by index
-         sec <- lookupMaybe (getSectionByIndex elf secnum)
-         msum
-            [ nullDir >> ok' (sectionPage pth elf secnum sec) 
-            
-            -- dump section content
-            , dir "content" $ do
-               -- select suggested output filename by the browser
-               let filename = textFormat ("section" % int % ".bin") (secnum :: Int)
-                   disp     = textFormat ("attachment; filename=\"" % stext % "\"") filename
-               ok 
-                  $ addHeader "Content-Disposition" (Text.unpack disp)
-                  $ toResponseBS (C.pack "application/octet-stream")
-                  $ LBS.fromStrict
-                  $ bufferUnpackByteString
-                  $ getSectionContentBuffer elf sec
+               -- disassembled section
+               [ "asm" ] -> okHtmlApp (sectionAsm pth elf secnum sec)
 
-            -- disassembled section
-            , dir "asm" $ ok' (sectionAsm pth elf secnum sec) 
+               _         -> notFound
 
-            ]
+         -- Segment specific
+         [ "segment" ] -> okHtmlApp (segmentsPage pth elf)
 
-      -- Segment specific
-      , dir "segment" $ nullDir >> ok' (segmentsPage pth elf)
-
-      , nullDir >> ok' (welcomePage pth elf)
-      ]
+         _ -> notFound
 
 -- | Return the value in a Maybe or mzero in MonadPlus
 lookupMaybe :: MonadPlus m => Maybe a -> m a
@@ -407,8 +412,8 @@ showSection elf secnum secname s = do
 
 
 
-   let contentPath = textFormat ("/section/" % int % "/content/") secnum
-   let asmPath     = textFormat ("/section/" % int % "/asm/") secnum
+   let contentPath = textFormat ("/section/" % int % "/content") secnum
+   let asmPath     = textFormat ("/section/" % int % "/asm") secnum
 
    br_ []
 
@@ -866,8 +871,8 @@ appTemplate doc = do
    h1_ "ELF viewer"
    doc
 
-css :: Response
-css = toResponseBS
-   (C.pack "text/css")
+css :: Server.Response
+css = Server.responseLBS Server.ok200
+   [(Server.hContentType, "text/css")]
    (LBS.fromStrict $(embedBSFile "src/elf/style.css"))
 

@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Main where
 
@@ -42,48 +43,53 @@ import qualified Haskus.Utils.List as List
 import qualified Haskus.Utils.Text as Text
 import Paths_haskus_system
 import Data.Version
-import Control.Monad
 import Text.Printf
 import Network.Socket (withSocketsDo)
 import Network.HTTP.Base (urlEncode)
 import Numeric
-import Happstack.Server
 import Data.Char (toUpper)
 import Data.Maybe
 import qualified Data.Map    as Map
 import qualified Data.Set    as Set
 import Data.Set (Set)
 import qualified Data.Vector as V
+import qualified Data.Text.Lazy.Encoding as Text.Lazy
 
+import qualified Haskus.Web.Server as Server
 import Haskus.Web.Html
 import Haskus.Web.Page
-import qualified Data.ByteString.Char8 as C
-import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy as LBS
 
 main :: IO ()
 main = withSocketsDo $ do
 
    opts <- getOptions
+   server (optport opts)
 
-   server (nullConf {port = optport opts})
 
+server :: Server.Port -> IO ()
+server port = do
+   putStrLn (printf "Starting Web server at localhost:%d" port)
 
-server :: Conf -> IO ()
-server conf = do
-   putStrLn (printf "Starting Web server at localhost:%d" (port conf))
-   let
-      defaultRep t = ok . toResponse . renderBS . tmplPage t
-   simpleHTTP conf $ msum
-      [ dir "css"  $ dir "style.css" $ ok css
-      , dir "all"  $ nullDir >> defaultRep "List all" showAll
-      , dir "maps" $ nullDir >> defaultRep "Maps"     showMaps
-      , dir "insn" $ path $ \mnemo -> defaultRep mnemo (showInsnByMnemo mnemo)
-      , dir "regs" $ nullDir >> defaultRep "Registers" showRegs
-      , nullDir >> defaultRep "System info" showWelcome
-      ]
+   Server.run port $ \req respond -> do
+      let okHtmlLBS lbs  = respond (Server.responseLBS Server.ok200 [(Server.hContentType,"text/html")] lbs)
+      let okHtmlApp t    = okHtmlLBS . renderBS . tmplPage t
+      let notFound       = respond (Server.responseLBS Server.notFound404 [] (Text.Lazy.encodeUtf8 "404 - Not found"))
 
-css :: Response
-css = toResponseBS (C.pack "text/css") (L.fromStrict $(embedBSFile "src/system-info/style.css"))
+      case Server.pathInfo req of
+         []                                 -> okHtmlApp "System info" showWelcome
+         [ "css", "style.css"]              -> respond css
+         [ "all" ]                          -> okHtmlApp "List all" showAll
+         [ "maps" ]                         -> okHtmlApp "Maps"     showMaps
+         [ "insn", (Text.unpack -> mnemo) ] -> okHtmlApp mnemo (showInsnByMnemo mnemo)
+         [ "regs" ]                         -> okHtmlApp "Registers" showRegs
+         _                                  -> notFound
+
+css :: Server.Response
+css = Server.responseLBS Server.ok200
+   [(Server.hContentType, "text/css")]
+   (LBS.fromStrict $(embedBSFile "src/system-info/style.css"))
+
 
 tmplPage :: String -> Html () -> Html ()
 tmplPage title bdy = htmlPage opts bdy

@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1569d6864f5174c09a726a841ff33be49c1aa2c93c7105de49cad27a018e03bc
+-- hash: abe1e786b21a095f649b5d224bd3ed563aa19ff48741bae7630f8a4f80af38fa
 
 name:           haskus-system-tools
 version:        0.8
@@ -36,7 +36,6 @@ executable haskus-disassembler
       base >=4.8 && <5
     , bytestring
     , containers
-    , happstack-server
     , haskus-binary
     , haskus-system
     , haskus-utils
@@ -61,7 +60,6 @@ executable haskus-elf
     , bytestring
     , containers
     , formatting
-    , happstack-server
     , haskus-binary
     , haskus-system
     , haskus-utils
@@ -87,7 +85,6 @@ executable haskus-gunzip
     , bytestring
     , containers
     , filepath
-    , happstack-server
     , haskus-binary
     , haskus-system
     , haskus-utils
@@ -111,7 +108,6 @@ executable haskus-huffman
       base >=4.8 && <5
     , bytestring
     , containers
-    , happstack-server
     , haskus-binary
     , haskus-system
     , haskus-utils
@@ -135,7 +131,6 @@ executable haskus-keys
       base >=4.8 && <5
     , bytestring
     , containers
-    , happstack-server
     , haskus-binary
     , haskus-system
     , haskus-utils
@@ -160,7 +155,6 @@ executable haskus-system-info
     , base >=4.8 && <5
     , bytestring
     , containers
-    , happstack-server
     , haskus-binary
     , haskus-system
     , haskus-utils
@@ -170,6 +164,7 @@ executable haskus-system-info
     , lucid
     , network
     , optparse-applicative
+    , text
     , transformers
     , vector
   default-language: Haskell2010
@@ -185,7 +180,6 @@ executable haskus-udev
       base >=4.8 && <5
     , bytestring
     , containers
-    , happstack-server
     , haskus-binary
     , haskus-system
     , haskus-utils

@@ -22,7 +22,6 @@ import Diagrams hiding (text)
 import Diagrams.TwoD.Text (FontSlant(..),FontWeight(..),Text(..))
 import Diagrams.Backend.Rasterific
 import Codec.Picture.Types
-import Data.Monoid (Any)
 
 type VDiagram' n = QDiagram Rasterific V2 n Any
 type VDiagram    = QDiagram Rasterific V2 Float Any

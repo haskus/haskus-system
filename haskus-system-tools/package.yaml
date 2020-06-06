@@ -24,7 +24,6 @@ dependencies:
 - haskus-web
 - haskus-binary
 - optparse-applicative
-- happstack-server
 - lucid
 - containers
 - bytestring
@@ -42,6 +41,7 @@ executables:
       dependencies: 
          - network
          - HTTP
+         - text
 
    haskus-elf:
       main: Main
