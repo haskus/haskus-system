@@ -280,6 +280,8 @@ data DynamicEntryFlag
 type DynamicEntryFlags = BitSet Word64 DynamicEntryFlag
 
 -- | Dynamic state flags (DynTypeStateFlags)
+--
+-- (DF_1_* flags)
 data DynamicStateFlag
    = DynStateFlagNow                        -- ^ Set RTLD_NOW for this object.  
    | DynStateFlagGlobal                     -- ^ Set RTLD_GLOBAL for this object.  
@@ -307,11 +309,18 @@ data DynamicStateFlag
    | DynStateFlagSymbolInterposers          -- ^ Object has individual interposers.  
    | DynStateFlagGlobalAudit                -- ^ Global auditing required.  
    | DynStateFlagSingletonSymbols           -- ^ Singleton symbols are used.  
+   | DynStateFlagStub
+   | DynStateFlagPIE
+   | DynStateFlagKMod
+   | DynStateFlagWeakFilter
+   | DynStateFlagNoCommon
    deriving (Show,Eq,Enum,BitOffset)
 
 type DynamicStateFlags = BitSet Word64 DynamicStateFlag
 
 -- | Features
+--
+-- (DTF_1_* flags)
 data DynamicFeature
    = DynFeatureParInit
    | DynFeatureConfExp
@@ -320,6 +329,8 @@ data DynamicFeature
 type DynamicFeatures = BitSet Word64 DynamicFeature
 
 -- | Dynamic positional flags affecting only the next entry
+--
+-- (DF_P1_* flags)
 data DynamicPositionalFlag
    = DynPositionalFlagLazyLoad   -- ^ Lazyload following object
    | DynPositionalFlagGroupPerm  -- ^ Symbols from next object are not generally available
