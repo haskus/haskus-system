@@ -339,6 +339,9 @@ data PcmAccess
    | PcmAccessRwNonInterleaved    -- ^ readn/writen
    deriving (Show,Eq,Enum,Ord,BitOffset,Bounded)
 
+-- | PCM sample format
+--
+-- (_snd_pcm_format in alsa/pcm.h)
 data PcmFormat
    = PcmFormatS8
    | PcmFormatU8
@@ -365,6 +368,10 @@ data PcmFormat
    | PcmFormatIMA_ADPCM
    | PcmFormatMPEG
    | PcmFormatGSM
+   | PcmFormatS20_LE             -- ^ Signed 20bit Little Endian in 4bytes format, LSB justified
+   | PcmFormatS20_BE             -- ^ Signed 20bit Big Endian in 4bytes format, LSB justified
+   | PcmFormatU20_LE             -- ^ Unsigned 20bit Little Endian in 4bytes format, LSB justified
+   | PcmFormatU20_BE             -- ^ Unsigned 20bit Big Endian in 4bytes format, LSB justified
    | PcmFormatSPECIAL
    | PcmFormatS24_3LE            -- ^ in three bytes
    | PcmFormatS24_3BE            -- ^ in three bytes
@@ -387,10 +394,10 @@ data PcmFormat
    | PcmFormatDSD_U32_LE         -- ^ DSD, 4-byte samples DSD (x32), little endian
    | PcmFormatDSD_U16_BE         -- ^ DSD, 2-byte samples DSD (x16), big endian
    | PcmFormatDSD_U32_BE         -- ^ DSD, 4-byte samples DSD (x32), big endian
-   deriving (Show,Eq,Ord,BitOffset,Bounded)
+   deriving (Show,Eq,Ord,Enum,Bounded)
 
-instance Enum PcmFormat where
-   fromEnum x = case x of
+instance BitOffset PcmFormat where
+   toBitOffset x = case x of
       PcmFormatS8                 -> 0
       PcmFormatU8                 -> 1
       PcmFormatS16_LE             -> 2
@@ -416,6 +423,10 @@ instance Enum PcmFormat where
       PcmFormatIMA_ADPCM          -> 22
       PcmFormatMPEG               -> 23
       PcmFormatGSM                -> 24
+      PcmFormatS20_LE             -> 25
+      PcmFormatS20_BE             -> 26
+      PcmFormatU20_LE             -> 27
+      PcmFormatU20_BE             -> 28
       PcmFormatSPECIAL            -> 31
       PcmFormatS24_3LE            -> 32
       PcmFormatS24_3BE            -> 33
@@ -439,7 +450,7 @@ instance Enum PcmFormat where
       PcmFormatDSD_U16_BE         -> 51
       PcmFormatDSD_U32_BE         -> 52
 
-   toEnum x = case x of
+   fromBitOffset x = case x of
     0  -> PcmFormatS8
     1  -> PcmFormatU8
     2  -> PcmFormatS16_LE
@@ -465,6 +476,10 @@ instance Enum PcmFormat where
     22 -> PcmFormatIMA_ADPCM
     23 -> PcmFormatMPEG
     24 -> PcmFormatGSM
+    25 -> PcmFormatS20_LE
+    26 -> PcmFormatS20_BE
+    27 -> PcmFormatU20_LE
+    28 -> PcmFormatU20_BE
     31 -> PcmFormatSPECIAL
     32 -> PcmFormatS24_3LE
     33 -> PcmFormatS24_3BE
