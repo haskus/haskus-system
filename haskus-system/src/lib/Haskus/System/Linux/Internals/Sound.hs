@@ -331,17 +331,20 @@ data PcmStream
    | PcmStreamCapture
    deriving (Show,Eq,Enum,Bounded)
 
+-- | PCM access type
+--
+-- (snd_pcm_access_t in alsa/pcm.h)
 data PcmAccess
-   = PcmAccessMmapInterleaved     -- ^ interleaved mmap
-   | PcmAccessMmapNontInterleaved -- ^ noninterleaved m
-   | PcmAccessMmapComplex         -- ^ complex mmap
-   | PcmAccessRwInterleaved       -- ^ readi/writei
-   | PcmAccessRwNonInterleaved    -- ^ readn/writen
+   = PcmAccessMmapInterleaved     -- ^ mmap access with simple interleaved channels
+   | PcmAccessMmapNontInterleaved -- ^ mmap access with simple non interleaved channels
+   | PcmAccessMmapComplex         -- ^ mmap access with complex placement
+   | PcmAccessRwInterleaved       -- ^ readi/writei access
+   | PcmAccessRwNonInterleaved    -- ^ readn/writen access
    deriving (Show,Eq,Enum,Ord,BitOffset,Bounded)
 
 -- | PCM sample format
 --
--- (_snd_pcm_format in alsa/pcm.h)
+-- (snd_pcm_format_t in alsa/pcm.h)
 data PcmFormat
    = PcmFormatS8
    | PcmFormatU8
