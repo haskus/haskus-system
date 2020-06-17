@@ -15,9 +15,11 @@ import qualified Haskus.Binary.BitSet as BitSet
 import Haskus.Binary.BitSet (BitOffset)
 import qualified Haskus.Binary.Vector as Vector
 import Haskus.Binary.Bits (complement,zeroBits)
+import Haskus.Number.Word
 
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.Ratio
 
 
 -- Note [PCM params]
@@ -65,9 +67,12 @@ anyParams = PcmHwParams
 
 -- | PCM configuration
 data PcmConfig = PcmConfig
-   { pcmConfigAccess    :: Set PcmAccess
-   , pcmConfigFormat    :: Set PcmFormat
-   , pcmConfigSubFormat :: Set PcmSubFormat
+   { pcmConfigAccess              :: Set PcmAccess
+   , pcmConfigFormat              :: Set PcmFormat
+   , pcmConfigSubFormat           :: Set PcmSubFormat
+   , pcmConfigRate                :: Ratio Word32
+   , pcmConfigFifoSize            :: !Word64
+   , pcmConfigMostSignificantBits :: !Word32
    -- TODO: add other fields (intervals...)
    }
    deriving (Show)
@@ -75,9 +80,12 @@ data PcmConfig = PcmConfig
 -- | Convert raw PCM hw params into PcmConfig
 toConfig :: PcmHwParams -> PcmConfig
 toConfig params = PcmConfig
-   { pcmConfigAccess    = fromMask m1
-   , pcmConfigFormat    = fromMask m2
-   , pcmConfigSubFormat = fromMask m3
+   { pcmConfigAccess              = fromMask m1
+   , pcmConfigFormat              = fromMask m2
+   , pcmConfigSubFormat           = fromMask m3
+   , pcmConfigRate                = pcmHwParamsRateNumerator params % pcmHwParamsRateDenominator params
+   , pcmConfigFifoSize            = pcmHwParamsFifoSize params
+   , pcmConfigMostSignificantBits = pcmHwParamsMostSignificantBits params
    }
    where
       fromMask :: forall a. (Ord a, Bounded a, Enum a, BitOffset a) => Mask -> Set a
