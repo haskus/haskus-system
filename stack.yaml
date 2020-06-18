@@ -6,21 +6,16 @@ packages:
 - 'haskus-system-examples'
 
 extra-deps:
-   # - haskus-utils-variant-2.6.1
-   # - haskus-utils-1.4
-   # - haskus-utils-data-1.1.1
-   # - haskus-utils-types-1.4.1
-   # - haskus-binary-1.4
+- haskus-binary-1.5
+- haskus-utils-1.5
+- haskus-utils-compat-1.1
+- haskus-utils-data-1.3
+- haskus-utils-types-1.5
+- haskus-utils-variant-3.0
 - hsnoise-0.0.2
 - git: https://github.com/haskus/packages.git
-  commit: f7fbff7d0fcfaf7bb505bdbabdf02a8d69925f2a
+  commit: e92231d1b6d70144c7f04cae07b8c3614dde05d2
   subdirs:
-     - haskus-utils-variant
-     - haskus-utils
-     - haskus-utils-types
-     - haskus-utils-data
-     - haskus-utils-compat
-     - haskus-binary
      - haskus-web
      - haskus-ui
 
