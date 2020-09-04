@@ -1,6 +1,6 @@
 linux:
    source: tarball
-   version: "5.2.1"
+   version: "5.8.6"
    options:
       enable:
          - CONFIG_DRM_BOCHS
