@@ -638,14 +638,14 @@ data PcmInfo = PcmInfo
 data PcmHwParam
    = PcmHwParamMask     PcmHwParamMask       -- ^ Mask-like parameter
    | PcmHwParamInterval PcmHwParamInterval   -- ^ Interval-like parameter
-   deriving (Show,Eq)
+   deriving (Show,Eq,Ord)
 
 -- | Mask-like parameter
 data PcmHwParamMask
    = PcmHwParamAccess      -- ^ Access type
    | PcmHwParamFormat      -- ^ Format
    | PcmHwParamSubFormat   -- ^ Subformat
-   deriving (Show,Eq,Enum)
+   deriving (Show,Eq,Ord,Enum)
 
 -- | Interval-like parameter
 data PcmHwParamInterval
@@ -661,7 +661,7 @@ data PcmHwParamInterval
    | PcmHwParamBufferSize  -- ^ Size of buffer in frames 
    | PcmHwParamBufferBytes -- ^ Size of buffer in bytes 
    | PcmHwParamTickTime    -- ^ Approx tick duration in us 
-   deriving (Show,Eq,Enum,Bounded)
+   deriving (Show,Eq,Ord,Enum,Bounded)
 
 
 instance Enum PcmHwParam where
@@ -759,6 +759,7 @@ data PcmHwParams = PcmHwParams
    , pcmHwParamsFifoSize            :: Word64             -- ^ R: chip FIFO size in frames
    , pcmHwParamsReserved            :: Vector 64 Word8    -- ^ reserved for future
    } deriving (Generic, Storable, Show)
+
 
 data PcmTimeStampMode
    = PcmTimeStampNone

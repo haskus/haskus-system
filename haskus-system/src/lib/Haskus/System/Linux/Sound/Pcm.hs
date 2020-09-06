@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | PCM devices
 module Haskus.System.Linux.Sound.Pcm
@@ -19,6 +20,8 @@ import Haskus.Number.Word
 
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.Ratio
 
 
@@ -73,7 +76,7 @@ data PcmConfig = PcmConfig
    , pcmConfigRate                :: Ratio Word32
    , pcmConfigFifoSize            :: !Word64
    , pcmConfigMostSignificantBits :: !Word32
-   -- TODO: add other fields (intervals...)
+   , pcmConfigIntervals           :: Map PcmHwParamInterval Interval
    }
    deriving (Show)
 
@@ -86,9 +89,14 @@ toConfig params = PcmConfig
    , pcmConfigRate                = pcmHwParamsRateNumerator params % pcmHwParamsRateDenominator params
    , pcmConfigFifoSize            = pcmHwParamsFifoSize params
    , pcmConfigMostSignificantBits = pcmHwParamsMostSignificantBits params
+   , pcmConfigIntervals           = fromIntervals
    }
    where
       fromMask :: forall a. (Ord a, Bounded a, Enum a, BitOffset a) => Mask -> Set a
       fromMask (Mask v) = Set.fromList (BitSet.enumerateSetBits v)
+
+      fromIntervals = Map.fromList $ zip
+                        [PcmHwParamSampleBits ..]
+                        (Vector.toList (pcmHwParamsIntervals params))
 
       m1:m2:m3:_ = Vector.toList (pcmHwParamsMasks params)
