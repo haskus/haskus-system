@@ -29,8 +29,7 @@ main = runSys' <| do
       forM_ mhdl <| \hdl -> do
          writeStrLn term ("\n- " ++ show devPath)
 
-         -- "mixer*" device seems to return garbage in QEMU
-         unless ("mixer" `List.isPrefixOf` (takeBaseName (Text.unpack devPath))) <| do
+         do
             hwinfo <- runE (Snd.ioctlHwInfo hdl)
             writeStrLn term ("HW info: " ++ show hwinfo)
 
