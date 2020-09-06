@@ -64,9 +64,21 @@ main = runSys' <| do
 
    forM_ pcmDevs <| \pcm -> do
       writeStrLn term ("\n\nSetting params on device: " <> show pcm)
-      writeStrLn term ("Request: " <> show anyParams)
-      r <- runE (toConfig <$> Snd.ioctlPcmHwParams anyParams pcm)
-      writeStrLn term ("Result: " <> show r)
+
+      hw_params <- runE (toConfig <$> Snd.ioctlPcmHwParams anyHwParams pcm)
+      writeStrLn term ("HW params: " <> show hw_params)
+      sw_params <- runE (Snd.ioctlPcmSwParams defaultSwParams pcm)
+      writeStrLn term ("SW params: " <> show sw_params)
+
+      rp <- runE (Snd.ioctlPcmPrepare pcm)
+      writeStrLn term ("Prepare: " <> show rp)
+      -- FIXME: we suppose at least 2 channels
+      let chan1' = Snd.PcmChannelInfo 0 0 0 0
+          chan2' = Snd.PcmChannelInfo 1 0 0 0
+      chan1 <- runE (Snd.ioctlPcmChannelInfo chan1' pcm)
+      chan2 <- runE (Snd.ioctlPcmChannelInfo chan2' pcm)
+      writeStrLn term ("Channel 1: " <> show chan1)
+      writeStrLn term ("Channel 2: " <> show chan2)
       runE_ (close pcm)
 
    powerOff

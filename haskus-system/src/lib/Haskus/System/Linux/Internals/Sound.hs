@@ -311,7 +311,7 @@ ioctlHwDspLoad = hwIoctlW 0x03
 -----------------------------------------------------------------------------
 
 pcmVersion :: Word32
-pcmVersion = 0x0002000d
+pcmVersion = 0x0002000e
 
 data PcmClass
    = PcmClassGeneric  -- ^ standard mono or stereo device
@@ -783,7 +783,7 @@ data PcmSwParams = PcmSwParams
    } deriving (Generic, Storable, Show)
 
 data PcmChannelInfo = PcmChannelInfo
-   { pcmChannelInfoChannel :: Word32
+   { pcmChannelInfoChannel :: Word32 -- ^ Channel number
    , pcmChannelInfoOffset  :: Int64  -- ^ mmap offset
    , pcmChannelInfoFirst   :: Word32 -- ^ offset to first sample in bits
    , pcmChannelInfoStep    :: Word32 -- ^ samples distance in bits
@@ -970,8 +970,8 @@ ioctlPcmSyncPtr = pcmIoctlWR 0x23
 ioctlPcmStatusExt :: MonadInIO m => PcmStatus -> Handle -> Excepts '[ErrorCode] m PcmStatus
 ioctlPcmStatusExt = pcmIoctlWR 0x24
 
-ioctlPcmChannelInfo :: MonadInIO m => Handle -> Excepts '[ErrorCode] m PcmChannelInfo
-ioctlPcmChannelInfo = pcmIoctlR 0x32
+ioctlPcmChannelInfo :: MonadInIO m => PcmChannelInfo -> Handle -> Excepts '[ErrorCode] m PcmChannelInfo
+ioctlPcmChannelInfo = pcmIoctlWR 0x32
 
 ioctlPcmPrepare :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmPrepare = pcmIoctl 0x40

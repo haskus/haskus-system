@@ -5,7 +5,8 @@
 module Haskus.System.Linux.Sound.Pcm
    ( anyInterval
    , anyMask
-   , anyParams
+   , anyHwParams
+   , defaultSwParams
    , PcmConfig (..)
    , toConfig
    )
@@ -52,9 +53,9 @@ anyInterval = Interval
 anyMask :: Mask
 anyMask = Mask (complement zeroBits)
 
--- | Any parameter set
-anyParams :: PcmHwParams
-anyParams = PcmHwParams
+-- | Any hw parameters
+anyHwParams :: PcmHwParams
+anyHwParams = PcmHwParams
    { pcmHwParamsFlags               = BitSet.empty
    , pcmHwParamsMasks               = Vector.replicate anyMask
    , pcmHwParamsIntervals           = Vector.replicate anyInterval
@@ -67,6 +68,39 @@ anyParams = PcmHwParams
    , pcmHwParamsFifoSize            = 0
    , pcmHwParamsReserved            = Vector.replicate 0
    }
+
+-- | Default sw parameters
+--
+-- snd_pcm_sw_params_default
+defaultSwParams :: PcmSwParams
+defaultSwParams = PcmSwParams
+   { pcmSwParamsTimeStamp        = 0 -- PcmTimeStampNone
+   , pcmSwParamsTimeStampType    = 0
+   , pcmSwParamsPeriodStep       = 1
+   , pcmSwParamsSleepMin         = 0
+   , pcmSwParamsAvailMin         = period_size
+   , pcmSwParamsXFerAlign        = 1
+   , pcmSwParamsStartThreshold   = 1
+   , pcmSwParamsStopThreshold    = buffer_size
+   , pcmSwParamsSilenceThreshold = 0
+   , pcmSwParamsSilenceSize      = 0
+   , pcmSwParamsBoundary         = boundary
+   , pcmSwParamsProtoVersion     = pcmVersion
+   , pcmSwParamsReserved         = Vector.replicate 0
+   }
+   where
+      buffer_size = 1024 -- FIXME: take as parameter from hw params
+      period_size = 32   -- FIXME: ditto
+
+      -- TODO: understand and document this
+      boundary = go buffer_size
+         where
+            max_boundary = maxBound - buffer_size
+            go x = case x*2 of
+               x' | x' <= buffer_size  -> x -- handle overflow
+                  | x' <= max_boundary -> go x'
+                  | otherwise          -> x
+
 
 -- | PCM configuration
 data PcmConfig = PcmConfig
