@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a2d35309c20971ae551d7a1a52b96b8e8892ccfb771812de86717987479b75a7
+-- hash: ba17a004c2643b2c83fcc4559c6ce1e6f882aa434263c35b8b2ac3f79c666807
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -38,6 +38,7 @@ executable Clock
       JuicyPixels
     , base >=4.8 && <5
     , bytestring
+    , containers
     , formatting
     , haskus-binary
     , haskus-system
@@ -99,6 +100,7 @@ executable DisplayState
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -122,6 +124,7 @@ executable HelloWorld
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -145,6 +148,7 @@ executable KernelEvent
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -168,6 +172,7 @@ executable ListDevices
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -191,6 +196,7 @@ executable OpenDevice
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -214,6 +220,7 @@ executable Sound
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , filepath
     , haskus-binary
     , haskus-system
@@ -241,6 +248,7 @@ executable Test
     , base >=4.8 && <5
     , bytestring
     , colour
+    , containers
     , either
     , haskus-binary
     , haskus-system
@@ -267,6 +275,7 @@ executable TutDisplays
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -288,6 +297,7 @@ executable TutEntitiesIDs
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -309,6 +319,7 @@ executable TutFirstPipeline
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -330,6 +341,7 @@ executable TutFrameSwitch
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -351,6 +363,7 @@ executable TutGenericFrame
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -372,6 +385,7 @@ executable TutProperties
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -393,6 +407,7 @@ executable TutSingleFrame
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -417,6 +432,7 @@ executable TutTetris
     , array
     , base >=4.8 && <5
     , clock
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui
@@ -441,6 +457,7 @@ executable VDSO
   ld-options: -static -pthread
   build-depends:
       base >=4.8 && <5
+    , containers
     , haskus-binary
     , haskus-system
     , haskus-ui

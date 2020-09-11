@@ -25,6 +25,7 @@ dependencies:
 - haskus-utils-compat
 - haskus-binary
 - haskus-ui
+- containers
 
 ghc-options: -Wall -O2 -static -threaded
 cc-options: -static
