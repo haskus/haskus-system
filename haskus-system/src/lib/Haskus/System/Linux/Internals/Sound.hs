@@ -783,10 +783,10 @@ data PcmSwParams = PcmSwParams
    } deriving (Generic, Storable, Show)
 
 data PcmChannelInfo = PcmChannelInfo
-   { pcmChannelInfoChannel :: Word32 -- ^ Channel number
-   , pcmChannelInfoOffset  :: Int64  -- ^ mmap offset
-   , pcmChannelInfoFirst   :: Word32 -- ^ offset to first sample in bits
-   , pcmChannelInfoStep    :: Word32 -- ^ samples distance in bits
+   { pcmChannelInfoChannel :: {-# UNPACK #-} !Word32 -- ^ Channel number
+   , pcmChannelInfoOffset  :: {-# UNPACK #-} !Int64  -- ^ mmap offset
+   , pcmChannelInfoFirst   :: {-# UNPACK #-} !Word32 -- ^ offset to first sample in bits
+   , pcmChannelInfoStep    :: {-# UNPACK #-} !Word32 -- ^ samples distance in bits
    } deriving (Show,Generic,Storable)
 
 data PcmAudioTimeStamp
@@ -971,7 +971,9 @@ ioctlPcmStatusExt :: MonadInIO m => PcmStatus -> Handle -> Excepts '[ErrorCode] 
 ioctlPcmStatusExt = pcmIoctlWR 0x24
 
 ioctlPcmChannelInfo :: MonadInIO m => PcmChannelInfo -> Handle -> Excepts '[ErrorCode] m PcmChannelInfo
-ioctlPcmChannelInfo = pcmIoctlWR 0x32
+ioctlPcmChannelInfo = ioctlWriteReadCmd (ioctlCommand Read 0x41 0x32 (sizeOfT' @PcmChannelInfo))
+                      -- ioctl with a WriteRead semantics (for the channel) but
+                      -- whose command is defined with a Read...
 
 ioctlPcmPrepare :: MonadInIO m => Handle -> Excepts '[ErrorCode] m ()
 ioctlPcmPrepare = pcmIoctl 0x40

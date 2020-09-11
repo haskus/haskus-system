@@ -70,8 +70,6 @@ main = runSys' <| do
       sw_params <- runE (Snd.ioctlPcmSwParams defaultSwParams pcm)
       writeStrLn term ("SW params: " <> show sw_params)
 
-      rp <- runE (Snd.ioctlPcmPrepare pcm)
-      writeStrLn term ("Prepare: " <> show rp)
       -- FIXME: we suppose at least 2 channels
       let chan1' = Snd.PcmChannelInfo 0 0 0 0
           chan2' = Snd.PcmChannelInfo 1 0 0 0
@@ -79,6 +77,9 @@ main = runSys' <| do
       chan2 <- runE (Snd.ioctlPcmChannelInfo chan2' pcm)
       writeStrLn term ("Channel 1: " <> show chan1)
       writeStrLn term ("Channel 2: " <> show chan2)
+
+      rp <- runE (Snd.ioctlPcmPrepare pcm)
+      writeStrLn term ("Prepare: " <> show rp)
       runE_ (close pcm)
 
    powerOff
