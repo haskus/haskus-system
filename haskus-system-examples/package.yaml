@@ -91,6 +91,10 @@ executables:
          - text
          - vector
 
+   syscall_bench:
+      main: Main.hs
+      source-dirs: src/syscall_bench
+
    KernelEvent:
       main: Main.hs
       source-dirs: src/kernel-events

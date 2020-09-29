@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ba17a004c2643b2c83fcc4559c6ce1e6f882aa434263c35b8b2ac3f79c666807
+-- hash: 54c0ed275ca75faa642d60d169205055163408413236f2c554f1ff59e9e84c43
 
 name:           haskus-system-examples
 version:        0.1.0.0
@@ -468,4 +468,28 @@ executable VDSO
     , haskus-utils-variant
     , text
     , vector
+  default-language: Haskell2010
+
+executable syscall_bench
+  main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_examples
+  hs-source-dirs:
+      src/syscall_bench
+  ghc-options: -Wall -O2 -static -threaded
+  cc-options: -static
+  extra-lib-dirs:
+      ./.system-work/lib
+  ld-options: -static -pthread
+  build-depends:
+      base >=4.8 && <5
+    , containers
+    , haskus-binary
+    , haskus-system
+    , haskus-ui
+    , haskus-utils
+    , haskus-utils-compat
+    , haskus-utils-data
+    , haskus-utils-types
+    , haskus-utils-variant
   default-language: Haskell2010
