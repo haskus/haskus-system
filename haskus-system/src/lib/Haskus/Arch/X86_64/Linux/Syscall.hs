@@ -20,6 +20,13 @@ module Haskus.Arch.X86_64.Linux.Syscall
    , syscall4safe
    , syscall5safe
    , syscall6safe
+   , syscall0unsafe
+   , syscall1unsafe
+   , syscall2unsafe
+   , syscall3unsafe
+   , syscall4unsafe
+   , syscall5unsafe
+   , syscall6unsafe
    )
 where
 
@@ -122,3 +129,33 @@ syscall2safe n a b = syscall2safe' n (toArg a) (toArg b)
 
 syscall1safe :: (Arg a) => Int64 -> a -> IO Int64
 syscall1safe n a = syscall1safe' n (toArg a)
+
+--------------------------------------------------
+-- Implementation using Haskell FFI
+--------------------------------------------------
+
+foreign import ccall unsafe "x86_64_linux_syscall6" syscall6unsafe' :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall unsafe "x86_64_linux_syscall5" syscall5unsafe' :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall unsafe "x86_64_linux_syscall4" syscall4unsafe' :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall unsafe "x86_64_linux_syscall3" syscall3unsafe' :: Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall unsafe "x86_64_linux_syscall2" syscall2unsafe' :: Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall unsafe "x86_64_linux_syscall1" syscall1unsafe' :: Int64 -> Int64 -> IO Int64
+foreign import ccall unsafe "x86_64_linux_syscall0" syscall0unsafe :: Int64 -> IO Int64
+
+syscall6unsafe :: (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Int64 -> a -> b -> c -> d -> e -> f -> IO Int64
+syscall6unsafe n a b c d e f = syscall6unsafe' n (toArg a) (toArg b) (toArg c) (toArg d) (toArg e) (toArg f)
+
+syscall5unsafe :: (Arg a, Arg b, Arg c, Arg d, Arg e) => Int64 -> a -> b -> c -> d -> e -> IO Int64
+syscall5unsafe n a b c d e = syscall5unsafe' n (toArg a) (toArg b) (toArg c) (toArg d) (toArg e)
+
+syscall4unsafe :: (Arg a, Arg b, Arg c, Arg d) => Int64 -> a -> b -> c -> d -> IO Int64
+syscall4unsafe n a b c d = syscall4unsafe' n (toArg a) (toArg b) (toArg c) (toArg d)
+
+syscall3unsafe :: (Arg a, Arg b, Arg c) => Int64 -> a -> b -> c -> IO Int64
+syscall3unsafe n a b c = syscall3unsafe' n (toArg a) (toArg b) (toArg c)
+
+syscall2unsafe :: (Arg a, Arg b) => Int64 -> a -> b -> IO Int64
+syscall2unsafe n a b = syscall2unsafe' n (toArg a) (toArg b)
+
+syscall1unsafe :: (Arg a) => Int64 -> a -> IO Int64
+syscall1unsafe n a = syscall1unsafe' n (toArg a)
