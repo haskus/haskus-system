@@ -826,8 +826,8 @@ data PcmMmapStatus = PcmMmapStatus
    } deriving (Show,Generic,Storable)
 
 data PcmMmapControl = PcmMmapControl
-   { pcmMmapControlApplPtr  :: Word64  -- ^ RW: appl ptr (0...boundary-1)
-   , pcmMmapControlAvailMin :: Word64  -- ^ RW: min available frames for wakeup
+   { pcmMmapControlApplPtr  :: {-# UNPACK #-} !Word64  -- ^ RW: appl ptr (0...boundary-1)
+   , pcmMmapControlAvailMin :: {-# UNPACK #-} !Word64  -- ^ RW: min available frames for wakeup
    } deriving (Show,Generic,Storable)
 
 data PcmSyncFlag
