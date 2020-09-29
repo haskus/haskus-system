@@ -3,16 +3,20 @@
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UnliftedFFITypes #-}
+{-# LANGUAGE InterruptibleFFI #-}
 
 -- | Linux syscall
 module Haskus.Arch.X86_64.Linux.Syscall
-   ( syscall0primop
+   ( 
+   -- * Primop syscalls
+     syscall0primop
    , syscall1primop
    , syscall2primop
    , syscall3primop
    , syscall4primop
    , syscall5primop
    , syscall6primop
+   -- * Safe syscalls
    , syscall0safe
    , syscall1safe
    , syscall2safe
@@ -20,6 +24,7 @@ module Haskus.Arch.X86_64.Linux.Syscall
    , syscall4safe
    , syscall5safe
    , syscall6safe
+   -- * Unsafe syscalls
    , syscall0unsafe
    , syscall1unsafe
    , syscall2unsafe
@@ -27,6 +32,14 @@ module Haskus.Arch.X86_64.Linux.Syscall
    , syscall4unsafe
    , syscall5unsafe
    , syscall6unsafe
+   -- * Interruptible syscalls
+   , syscall0interruptible
+   , syscall1interruptible
+   , syscall2interruptible
+   , syscall3interruptible
+   , syscall4interruptible
+   , syscall5interruptible
+   , syscall6interruptible
    )
 where
 
@@ -101,7 +114,7 @@ syscall1primop n a = syscall1primop' n (toArg a)
 
 
 --------------------------------------------------
--- Implementation using Haskell FFI
+-- Implementation using Haskell safe FFI
 --------------------------------------------------
 
 foreign import ccall safe "x86_64_linux_syscall6" syscall6safe' :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
@@ -131,7 +144,7 @@ syscall1safe :: (Arg a) => Int64 -> a -> IO Int64
 syscall1safe n a = syscall1safe' n (toArg a)
 
 --------------------------------------------------
--- Implementation using Haskell FFI
+-- Implementation using Haskell unsafe FFI
 --------------------------------------------------
 
 foreign import ccall unsafe "x86_64_linux_syscall6" syscall6unsafe' :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
@@ -159,3 +172,33 @@ syscall2unsafe n a b = syscall2unsafe' n (toArg a) (toArg b)
 
 syscall1unsafe :: (Arg a) => Int64 -> a -> IO Int64
 syscall1unsafe n a = syscall1unsafe' n (toArg a)
+
+--------------------------------------------------
+-- Implementation using Haskell interruptible FFI
+--------------------------------------------------
+
+foreign import ccall interruptible "x86_64_linux_syscall6" syscall6interruptible' :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall interruptible "x86_64_linux_syscall5" syscall5interruptible' :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall interruptible "x86_64_linux_syscall4" syscall4interruptible' :: Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall interruptible "x86_64_linux_syscall3" syscall3interruptible' :: Int64 -> Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall interruptible "x86_64_linux_syscall2" syscall2interruptible' :: Int64 -> Int64 -> Int64 -> IO Int64
+foreign import ccall interruptible "x86_64_linux_syscall1" syscall1interruptible' :: Int64 -> Int64 -> IO Int64
+foreign import ccall interruptible "x86_64_linux_syscall0" syscall0interruptible :: Int64 -> IO Int64
+
+syscall6interruptible :: (Arg a, Arg b, Arg c, Arg d, Arg e, Arg f) => Int64 -> a -> b -> c -> d -> e -> f -> IO Int64
+syscall6interruptible n a b c d e f = syscall6interruptible' n (toArg a) (toArg b) (toArg c) (toArg d) (toArg e) (toArg f)
+
+syscall5interruptible :: (Arg a, Arg b, Arg c, Arg d, Arg e) => Int64 -> a -> b -> c -> d -> e -> IO Int64
+syscall5interruptible n a b c d e = syscall5interruptible' n (toArg a) (toArg b) (toArg c) (toArg d) (toArg e)
+
+syscall4interruptible :: (Arg a, Arg b, Arg c, Arg d) => Int64 -> a -> b -> c -> d -> IO Int64
+syscall4interruptible n a b c d = syscall4interruptible' n (toArg a) (toArg b) (toArg c) (toArg d)
+
+syscall3interruptible :: (Arg a, Arg b, Arg c) => Int64 -> a -> b -> c -> IO Int64
+syscall3interruptible n a b c = syscall3interruptible' n (toArg a) (toArg b) (toArg c)
+
+syscall2interruptible :: (Arg a, Arg b) => Int64 -> a -> b -> IO Int64
+syscall2interruptible n a b = syscall2interruptible' n (toArg a) (toArg b)
+
+syscall1interruptible :: (Arg a) => Int64 -> a -> IO Int64
+syscall1interruptible n a = syscall1interruptible' n (toArg a)
