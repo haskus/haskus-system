@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Haskus.Arch.X86_64.ISA.Insn
    ( EncodingVariant(..)
@@ -18,12 +19,12 @@ import Data.Set (Set)
 
 -- | A fully defined instruction (isomorphic to its binary representation)
 data Insn = Insn
-   { insnOpcode    :: Opcode
-   , insnOperands  :: [Operand]
-   , insnModifiers :: Set Modifier
-   , insnSpec      :: X86Insn
-   , insnEncoding  :: Encoding
-   , insnVariant   :: Set EncodingVariant
+   { insnOpcode    :: !Opcode
+   , insnOperands  :: ![Operand]
+   , insnModifiers :: !(Set Modifier)
+   , insnSpec      :: !X86Insn
+   , insnEncoding  :: !Encoding
+   , insnVariant   :: !(Set EncodingVariant)
    }
    deriving (Show)
 
@@ -49,12 +50,12 @@ data EncodingVariant
 
 -- | X86 instruction
 data X86Insn = X86Insn
-   { insnDesc        :: String
-   , insnMnemonic    :: String
-   , insnProperties  :: [Properties]
-   , insnFamilies    :: [InsnFamily]
-   , insnFlags       :: [FlagOp Flag]
-   , insnEncodings   :: [Encoding]
+   { insnDesc        :: !String
+   , insnMnemonic    :: !String
+   , insnProperties  :: ![Properties]
+   , insnFamilies    :: ![InsnFamily]
+   , insnFlags       :: ![FlagOp Flag]
+   , insnEncodings   :: ![Encoding]
    } deriving (Show)
 
 -- | Instruction properties

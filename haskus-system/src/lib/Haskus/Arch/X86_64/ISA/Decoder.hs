@@ -66,10 +66,19 @@ getInstruction mode = consumeAtMost 15 $ do
          -- read opcode byte
          let OpLegacy rx ocm _ = oc
          oc' <- OpLegacy rx ocm <$> getWord8
+         -- TODO: support 3DNow!
+         let i3dnow = X86Insn
+                { insnDesc       = "3DNow! instruction"
+                , insnMnemonic   = ""
+                , insnProperties = []
+                , insnFamilies   = []
+                , insnFlags      = []
+                , insnEncodings  = []
+                }
          return $ Insn oc'
                 ops
                 Set.empty -- modifiers
-                (error "3DNow! instructions not supported") -- spec TODO
+                i3dnow
                 amd3DNowEncoding
                 Set.empty -- variants
 
