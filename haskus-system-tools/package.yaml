@@ -73,3 +73,10 @@ executables:
    haskus-keys:
       main: Main
       source-dirs: src/keys
+
+   haskus-tracer:
+      main: Main
+      source-dirs: src/tracer
+      dependencies:
+        - unix
+        - haskus-utils-variant

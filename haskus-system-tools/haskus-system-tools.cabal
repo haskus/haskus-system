@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: abe1e786b21a095f649b5d224bd3ed563aa19ff48741bae7630f8a4f80af38fa
+-- hash: ef5ce826ea5a96aeca30dc228a56b60dcc663eb15767aba332e3c3af2bd2b363
 
 name:           haskus-system-tools
 version:        0.8
@@ -166,6 +166,31 @@ executable haskus-system-info
     , optparse-applicative
     , text
     , transformers
+    , vector
+  default-language: Haskell2010
+
+executable haskus-tracer
+  main-is: Main.hs
+  other-modules:
+      Paths_haskus_system_tools
+  hs-source-dirs:
+      src/tracer
+  ghc-options: -Wall -O2 -threaded -main-is Main
+  build-depends:
+      base >=4.8 && <5
+    , bytestring
+    , containers
+    , haskus-binary
+    , haskus-system
+    , haskus-utils
+    , haskus-utils-compat
+    , haskus-utils-data
+    , haskus-utils-variant
+    , haskus-web
+    , lucid
+    , optparse-applicative
+    , transformers
+    , unix
     , vector
   default-language: Haskell2010
 

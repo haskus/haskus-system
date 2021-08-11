@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- | Process tracing (ptrace)
 module Haskus.System.Linux.Trace
@@ -10,17 +12,24 @@ module Haskus.System.Linux.Trace
    , PeekSigInfoFlags(..)
    , PeekSigInfoArgs(..)
    , sysTrace
+   , sysTraceMe
+   , sysTraceInterrupt
+   , RegsX86_64 (..)
+   , sysTraceGetRegs
+   , sysTraceSeize
    )
 where
 
 import Haskus.System.Linux.Syscalls
 import Haskus.System.Linux.ErrorCode
 import Haskus.System.Linux.Process (ProcessID(..))
-import Haskus.Binary.BitSet
+import Haskus.Binary.BitSet as BitSet
+import Haskus.Binary.Storable
 import Haskus.Number.Word
 import Haskus.Number.Int
 import Foreign.Ptr
 import Haskus.Utils.Flow
+import Haskus.Utils.Types.Generics (Generic)
 
 -- | Tracing request
 data TraceRequest
@@ -197,3 +206,31 @@ data PeekSigInfoFlags
 sysTrace :: MonadIO m => TraceRequest -> ProcessID -> Ptr () -> Ptr () -> Excepts '[ErrorCode] m Int64
 sysTrace req (ProcessID pid) addr dat =
    checkErrorCode =<< liftIO (syscall_ptrace (fromEnum req) pid addr dat)
+
+-- | Allow process tracing
+sysTraceMe :: MonadIO m => Excepts '[ErrorCode] m ()
+sysTraceMe = void $ sysTrace ReqTraceMe (ProcessID 0) nullPtr nullPtr
+
+-- | Seize a process
+sysTraceSeize :: MonadIO m => ProcessID -> [TraceOption] -> Excepts '[ErrorCode] m ()
+sysTraceSeize pid opts = void $ sysTrace ReqSeize pid nullPtr opts_ptr
+  where
+    opts_set = BitSet.fromList opts :: BitSet Word64 TraceOption
+    opts_ptr = intPtrToPtr (fromIntegral (BitSet.toBits opts_set))
+
+-- | Interrupt a process
+sysTraceInterrupt :: MonadIO m => ProcessID -> Excepts '[ErrorCode] m ()
+sysTraceInterrupt pid = void $ sysTrace ReqInterrupt pid nullPtr nullPtr
+
+
+data RegsX86_64 = RegsX86_64
+  { r15,r14,r13,r12,rbp,rbx,r11,r10,r9,r8,rax,rcx,rdx,rsi,rdi,orig_rax,rip,cs,eflags,rsp,ss,fs_base,gs_base,ds,es,fs,gs :: {-# UNPACK #-} !Word64
+  }
+  deriving (Show,Generic,Storable)
+
+
+-- | Get registers
+sysTraceGetRegs :: (MonadInIO m, MonadIO m) => ProcessID -> Excepts '[ErrorCode] m RegsX86_64
+sysTraceGetRegs pid = alloca \regs -> do
+  void $ sysTrace ReqGetRegisters pid nullPtr (castPtr regs)
+  liftIO (peek regs)
