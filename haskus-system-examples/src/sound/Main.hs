@@ -16,6 +16,9 @@ import Foreign.Concurrent (newForeignPtr)
 
 import System.FilePath
 import Data.List as List
+import Data.Word
+import Foreign.Storable
+import Foreign.Ptr
 import qualified Data.Set as Set
 
 main :: IO ()
@@ -91,8 +94,11 @@ main = runSys' <| do
       rp <- runE (Snd.ioctlPcmPrepare pcm)
       writeStrLn term ("Prepare: " <> show rp)
 
-      let sz = 1024 -- FIXME: buffer size
-      vaddr <- runE $ sysMemMap Nothing sz
+      let sample_size = 2 -- FIXME: 16-bit samples
+      let n_samples = 1000 -- FIXME (period = 2000 frames)
+      let n_channels = 2 -- stereo
+      let sz = n_samples * sample_size * n_channels-- FIXME: buffer size
+      vaddr <- runE <| sysMemMap Nothing sz
                (BitSet.fromList [ProtRead,ProtWrite])
                (BitSet.fromList [MapShared])
                Nothing
@@ -105,10 +111,24 @@ main = runSys' <| do
          VRight addr -> do
 
             -- create a foreign pointer that automatically unmaps the buffer
-            let finalizer = runE_ (sysMemUnmap addr sz)
-            fptr <- liftIO (newForeignPtr addr finalizer)
+            --let finalizer = runE_ (sysMemUnmap addr sz)
+            --fptr <- liftIO (newForeignPtr addr finalizer)
 
             writeStrLn term ("Mmaped: " <> show addr)
+
+            runE_ <| Snd.ioctlPcmStart pcm
+
+            replicateM_ 1000 $ do
+              forM_ [0..n_samples] $ \s -> do
+                forM_ [0..n_channels] $ \c -> do
+                  let v = fromIntegral s * 1000 :: Word16
+                  liftIO $ pokeElemOff (castPtr addr) (fromIntegral (2*s)) v
+                  liftIO $ pokeElemOff (castPtr addr) (fromIntegral (2*s+1)) v
+
+              runE_ $ Snd.ioctlPcmForward n_samples pcm
+              runE_ $ Snd.ioctlPcmHwSync pcm
+
+              threadDelaySec 1
 
       runE_ (close pcm)
 
