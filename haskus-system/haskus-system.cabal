@@ -47,6 +47,7 @@ library
     Haskus.Arch.X86_64.ISA.Insns
     Haskus.Arch.X86_64.ISA.Insn
     Haskus.Arch.X86_64.ISA.Encoding
+    Haskus.Arch.X86_64.ISA.Encoder
     Haskus.Arch.X86_64.Disassembler
 
     Haskus.System.Linux.Internals.Error
