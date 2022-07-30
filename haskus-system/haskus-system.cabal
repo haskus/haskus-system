@@ -35,6 +35,7 @@ library
     Haskus.Arch.X86_64.Linux.Syscalls
 
     Haskus.Arch.X86_64.ISA.Operand
+    Haskus.Arch.X86_64.ISA.Ops
     Haskus.Arch.X86_64.ISA.Memory
     Haskus.Arch.X86_64.ISA.Immediate
     Haskus.Arch.X86_64.ISA.Solver
