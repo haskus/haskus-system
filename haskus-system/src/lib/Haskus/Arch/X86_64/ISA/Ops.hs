@@ -13,9 +13,10 @@
 module Haskus.Arch.X86_64.ISA.Ops where
 
 import Data.Word
-import Control.Monad.State
+import qualified Control.Monad.State as S
 import Data.Bifunctor
-import Data.Bits
+
+import Haskus.Arch.X86_64.ISA.Output
 
 -- General purpose instructions
 data GPInsn cond mem reg imm
@@ -170,7 +171,7 @@ data DefaultOperandSize
 --
 -- For most instructions, it supports value arguments or markers. Markers
 -- produce relocations that can be fixed up in a following pass.
-class Monad m => Gen m where
+class Output m => Asm m where
   type Location m
   type Marker   m
 
@@ -179,9 +180,6 @@ class Monad m => Gen m where
 
   -- | Get current default operand size
   getOperandSize :: m DefaultOperandSize
-
-  -- | Write a Word8
-  putW8    :: Word8 -> m ()
 
   -- | Add a relocation
   addReloc :: Reloc (Marker m) (Location m) -> m ()
@@ -199,26 +197,29 @@ initCGState :: CGState
 initCGState = CGState [] [] 0 DefaultOperandSize32
 
 
-newtype CodeGen a = CodeGen (State CGState a)
+newtype CodeGen a = CodeGen (S.State CGState a)
   deriving newtype (Functor,Applicative,Monad)
 
-instance Gen CodeGen where
-  type Location CodeGen = Word
-  type Marker   CodeGen = String
-
-  getLoc         = CodeGen (gets cg_pos)
-  getOperandSize = CodeGen (gets cg_op_size)
-
-  putW8 b    = CodeGen $ modify \s -> s
+instance Output CodeGen where
+  putW8 b    = CodeGen $ S.modify \s -> s
                   { cg_bytes = b : cg_bytes s
                   , cg_pos   = cg_pos s + 1
                   }
-  addReloc r = CodeGen $ modify \s -> s
+  getPos = CodeGen $ S.gets cg_pos
+
+instance Asm CodeGen where
+  type Location CodeGen = Word
+  type Marker   CodeGen = String
+
+  getLoc         = CodeGen (S.gets cg_pos)
+  getOperandSize = CodeGen (S.gets cg_op_size)
+
+  addReloc r = CodeGen $ S.modify \s -> s
                   { cg_relocs = r : cg_relocs s
                   }
 
 runCodeGen :: CodeGen a -> (a, CGState)
-runCodeGen (CodeGen m) = second fix_state $ runState m initCGState
+runCodeGen (CodeGen m) = second fix_state $ S.runState m initCGState
   where
     fix_state s = s
       { cg_bytes  = reverse (cg_bytes s)
@@ -234,38 +235,24 @@ type Imm8  m = ValueOrMarker Word8  m
 type Imm16 m = ValueOrMarker Word16 m
 type Imm32 m = ValueOrMarker Word32 m
 
--- | Put a 16-bit immediate
-putW16 :: Gen m => Word16 -> m ()
-putW16 v = do
-  putW8 (fromIntegral v)
-  putW8 (fromIntegral (v `unsafeShiftR` 8))
-
--- | Put a 32-bit immediate
-putW32 :: Gen m => Word32 -> m ()
-putW32 v = do
-  putW8 (fromIntegral v)
-  putW8 (fromIntegral (v `unsafeShiftR` 8))
-  putW8 (fromIntegral (v `unsafeShiftR` 16))
-  putW8 (fromIntegral (v `unsafeShiftR` 24))
-
 -- | Enable 16-bit operand size if it isn't the default
-setOperandSize16 :: Gen m => m ()
+setOperandSize16 :: Asm m => m ()
 setOperandSize16 = getOperandSize >>= \case
   DefaultOperandSize16 -> pure ()
   DefaultOperandSize32 -> putW8 0x66
 
 -- | Enable 32-bit operand size if it isn't the default
-setOperandSize32 :: Gen m => m ()
+setOperandSize32 :: Asm m => m ()
 setOperandSize32 = getOperandSize >>= \case
   DefaultOperandSize16 -> putW8 0x66
   DefaultOperandSize32 -> pure ()
   
 -- | Enable 64-bit operand size (REX.W)
-putRexW :: Gen m => m ()
+putRexW :: Asm m => m ()
 putRexW = putW8 0b01001000
 
 -- | Add with carry imm8 to AL
-putADC_AL_imm8 :: Gen m => Imm8 m -> m ()
+putADC_AL_imm8 :: Asm m => Imm8 m -> m ()
 putADC_AL_imm8 a = do
   putW8 0x14
   case a of
@@ -277,7 +264,7 @@ putADC_AL_imm8 a = do
       putW8 0x00 -- placeholder
 
 -- | Add with carry imm16 to AX
-putADC_AX_imm16 :: Gen m => Imm16 m -> m ()
+putADC_AX_imm16 :: Asm m => Imm16 m -> m ()
 putADC_AX_imm16 a = do
   setOperandSize16
   putW8 0x15
@@ -291,7 +278,7 @@ putADC_AX_imm16 a = do
       putW8 0x00
 
 -- | Add with carry imm32 to EAX
-putADC_EAX_imm32 :: Gen m => Imm32 m -> m ()
+putADC_EAX_imm32 :: Asm m => Imm32 m -> m ()
 putADC_EAX_imm32 a = do
   setOperandSize32
   putW8 0x15
@@ -307,7 +294,7 @@ putADC_EAX_imm32 a = do
       putW8 0x00
 
 -- | Add with carry imm32 sign-extended to 64-bits to RAX
-putADC_RAX_imm32 :: Gen m => Imm32 m -> m ()
+putADC_RAX_imm32 :: Asm m => Imm32 m -> m ()
 putADC_RAX_imm32 a = do
   putRexW
   putW8 0x15
@@ -321,3 +308,7 @@ putADC_RAX_imm32 a = do
       putW8 0x00
       putW8 0x00
       putW8 0x00
+
+
+-- > runCodeGen $ putADC_AL_imm8 (V 15) >> putADC_AL_imm8 (M "Imm8 marker") >> putADC_AL_imm8 (V 27) >> putADC_AX_imm16 (V 0x0102)
+-- ((),CGState {cg_relocs = [RelocImm8 "Imm8 marker" 3], cg_bytes = [20,15,20,0,20,27,102,21,2,1], cg_pos = 10, cg_op_size = DefaultOperandSize32})
