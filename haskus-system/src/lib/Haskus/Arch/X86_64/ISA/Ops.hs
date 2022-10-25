@@ -172,29 +172,18 @@ data DefaultOperandSize
 -- For most instructions, it supports value arguments or markers. Markers
 -- produce relocations that can be fixed up in a following pass.
 class Output m => Asm m where
-  type Location m
-  type Marker   m
-
-  -- | Get current location (in bytes)
-  getLoc   :: m (Location m)
-
   -- | Get current default operand size
   getOperandSize :: m DefaultOperandSize
 
-  -- | Add a relocation
-  addReloc :: Reloc (Marker m) (Location m) -> m ()
-
-
 data CGState = CGState
-  { cg_relocs  :: ![Reloc (Marker CodeGen) (Location CodeGen)]
-  , cg_bytes   :: ![Word8]
-  , cg_pos     :: !Word
+  { cg_bytes   :: ![Word8]
+  , cg_pos     :: !Location
   , cg_op_size :: !DefaultOperandSize
   }
   deriving (Show)
 
 initCGState :: CGState
-initCGState = CGState [] [] 0 DefaultOperandSize32
+initCGState = CGState [] 0 DefaultOperandSize32
 
 
 newtype CodeGen a = CodeGen (S.State CGState a)
@@ -205,35 +194,25 @@ instance Output CodeGen where
                   { cg_bytes = b : cg_bytes s
                   , cg_pos   = cg_pos s + 1
                   }
-  getPos = CodeGen $ S.gets cg_pos
+  getLoc = CodeGen (S.gets cg_pos)
 
 instance Asm CodeGen where
-  type Location CodeGen = Word
-  type Marker   CodeGen = String
-
-  getLoc         = CodeGen (S.gets cg_pos)
   getOperandSize = CodeGen (S.gets cg_op_size)
-
-  addReloc r = CodeGen $ S.modify \s -> s
-                  { cg_relocs = r : cg_relocs s
-                  }
 
 runCodeGen :: CodeGen a -> (a, CGState)
 runCodeGen (CodeGen m) = second fix_state $ S.runState m initCGState
   where
     fix_state s = s
       { cg_bytes  = reverse (cg_bytes s)
-      , cg_relocs = reverse (cg_relocs s)
       }
 
--- | Constant value or marker
-data ValueOrMarker a m
-  = V a
-  | M (Marker m)
+newtype LocImm8  = LocImm8  Location
+newtype LocImm16 = LocImm16 Location
+newtype LocImm32 = LocImm32 Location
+newtype LocImm64 = LocImm64 Location
 
-type Imm8  m = ValueOrMarker Word8  m
-type Imm16 m = ValueOrMarker Word16 m
-type Imm32 m = ValueOrMarker Word32 m
+-- | Location of a sign-extended 32-bit value
+newtype LocImm32SE = LocImm32SE Location
 
 -- | Enable 16-bit operand size if it isn't the default
 setOperandSize16 :: Asm m => m ()
@@ -252,62 +231,47 @@ putRexW :: Asm m => m ()
 putRexW = putW8 0b01001000
 
 -- | Add with carry imm8 to AL
-putADC_AL_imm8 :: Asm m => Imm8 m -> m ()
-putADC_AL_imm8 a = do
+--
+-- Return offset of the imm8 value
+putADC_AL_imm8 :: Asm m => Word8 -> m LocImm8
+putADC_AL_imm8 v = do
   putW8 0x14
-  case a of
-    V v -> do
-      putW8 v
-    M m -> do
-      l <- getLoc
-      addReloc (RelocImm8 m l)
-      putW8 0x00 -- placeholder
+  loc <- LocImm8 <$> getLoc
+  putW8 v
+  pure loc
 
 -- | Add with carry imm16 to AX
-putADC_AX_imm16 :: Asm m => Imm16 m -> m ()
-putADC_AX_imm16 a = do
+--
+-- Return offset of the imm16 value
+putADC_AX_imm16 :: Asm m => Word16 -> m LocImm16
+putADC_AX_imm16 v = do
   setOperandSize16
   putW8 0x15
-  case a of
-    V v -> do
-      putW16 v
-    M m -> do
-      l <- getLoc
-      addReloc (RelocImm16 m l)
-      putW8 0x00 -- placeholder
-      putW8 0x00
+  loc <- LocImm16 <$> getLoc
+  putW16 v
+  pure loc
 
 -- | Add with carry imm32 to EAX
-putADC_EAX_imm32 :: Asm m => Imm32 m -> m ()
-putADC_EAX_imm32 a = do
+--
+-- Return offset of the imm32 value
+putADC_EAX_imm32 :: Asm m => Word32 -> m LocImm32
+putADC_EAX_imm32 v = do
   setOperandSize32
   putW8 0x15
-  case a of
-    V v -> do
-      putW32 v
-    M m -> do
-      l <- getLoc
-      addReloc (RelocImm32 m l)
-      putW8 0x00 -- placeholder
-      putW8 0x00
-      putW8 0x00
-      putW8 0x00
+  loc <- LocImm32 <$> getLoc
+  putW32 v
+  pure loc
 
 -- | Add with carry imm32 sign-extended to 64-bits to RAX
-putADC_RAX_imm32 :: Asm m => Imm32 m -> m ()
-putADC_RAX_imm32 a = do
+--
+-- Return offset of the sign-extended imm32 value
+putADC_RAX_imm32 :: Asm m => Word32 -> m LocImm32SE
+putADC_RAX_imm32 v = do
   putRexW
   putW8 0x15
-  case a of
-    V v -> do
-      putW32 v
-    M m -> do
-      l <- getLoc
-      addReloc (RelocImm32 m l)
-      putW8 0x00 -- placeholder
-      putW8 0x00
-      putW8 0x00
-      putW8 0x00
+  loc <- LocImm32SE <$> getLoc
+  putW32 v
+  pure loc
 
 
 -- > runCodeGen $ putADC_AL_imm8 (V 15) >> putADC_AL_imm8 (M "Imm8 marker") >> putADC_AL_imm8 (V 27) >> putADC_AX_imm16 (V 0x0102)

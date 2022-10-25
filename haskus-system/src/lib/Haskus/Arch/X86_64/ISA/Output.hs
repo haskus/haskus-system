@@ -1,6 +1,7 @@
 module Haskus.Arch.X86_64.ISA.Output
   ( Output (..)
   , Put (..)
+  , Location
   , putW16
   , putW32
   , putW64
@@ -18,12 +19,14 @@ import Data.Int
 import Data.Bits
 import Data.Char
 
+type Location = Word64
+
 class Monad m => Output m where
   -- | Output the given byte
   putW8 :: Word8 -> m ()
 
   -- | Return the number of bytes written
-  getPos :: m Word
+  getLoc :: m Location
 
 -- | Output a 16-bit word
 putW16 :: Output m => Word16 -> m ()
