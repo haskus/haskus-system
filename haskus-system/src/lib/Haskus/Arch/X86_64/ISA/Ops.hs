@@ -9,10 +9,14 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE BinaryLiterals #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Haskus.Arch.X86_64.ISA.Ops where
 
 import Data.Word
+import Data.Int
 import qualified Control.Monad.State as S
 import Data.Bifunctor
 
@@ -230,48 +234,133 @@ setOperandSize32 = getOperandSize >>= \case
 putRexW :: Asm m => m ()
 putRexW = putW8 0b01001000
 
--- | Add with carry imm8 to AL
---
--- Return offset of the imm8 value
-putADC_AL_imm8 :: Asm m => Word8 -> m LocImm8
-putADC_AL_imm8 v = do
-  putW8 0x14
+putOpcode :: Asm m => Word8 -> m ()
+putOpcode = putW8
+
+putImm8 :: Asm m => Word8 -> m LocImm8
+putImm8 v = do
   loc <- LocImm8 <$> getLoc
   putW8 v
   pure loc
 
--- | Add with carry imm16 to AX
---
--- Return offset of the imm16 value
-putADC_AX_imm16 :: Asm m => Word16 -> m LocImm16
-putADC_AX_imm16 v = do
-  setOperandSize16
-  putW8 0x15
+putImm16 :: Asm m => Word16 -> m LocImm16
+putImm16 v = do
   loc <- LocImm16 <$> getLoc
   putW16 v
   pure loc
 
--- | Add with carry imm32 to EAX
---
--- Return offset of the imm32 value
-putADC_EAX_imm32 :: Asm m => Word32 -> m LocImm32
-putADC_EAX_imm32 v = do
-  setOperandSize32
-  putW8 0x15
+putImm32 :: Asm m => Word32 -> m LocImm32
+putImm32 v = do
   loc <- LocImm32 <$> getLoc
   putW32 v
   pure loc
 
--- | Add with carry imm32 sign-extended to 64-bits to RAX
---
--- Return offset of the sign-extended imm32 value
-putADC_RAX_imm32 :: Asm m => Word32 -> m LocImm32SE
-putADC_RAX_imm32 v = do
-  putRexW
-  putW8 0x15
+putImm32SE :: Asm m => Word32 -> m LocImm32SE
+putImm32SE v = do
   loc <- LocImm32SE <$> getLoc
   putW32 v
   pure loc
+
+putModRM :: Asm m => Word8 -> m ()
+putModRM = putW8
+
+-- ========================================
+-- Instructions
+-- ========================================
+
+class Put a where
+  type PutResult a
+  put :: Asm m => a -> m (PutResult a)
+
+instance Put Word8  where
+  type PutResult Word8 = ()
+  put = putW8
+
+instance Put Word16 where
+  type PutResult Word16 = ()
+  put = putW16
+
+instance Put Word32 where
+  type PutResult Word32 = ()
+  put = putW32
+
+instance Put Word64 where
+  type PutResult Word64 = ()
+  put = putW64
+
+instance Put Int8   where
+  type PutResult Int8 = ()
+  put = putI8
+
+instance Put Int16  where
+  type PutResult Int16 = ()
+  put = putI16
+
+instance Put Int32  where
+  type PutResult Int32 = ()
+  put = putI32
+
+instance Put Int64  where
+  type PutResult Int64 = ()
+  put = putI64
+
+------------------------------------------
+-- ADC: add with carry
+------------------------------------------
+
+-- Variants
+-----------
+
+-- | Add with carry imm8 to AL
+newtype ADC_AL_imm8 = ADC_AL_imm8 Word8
+
+-- | Add with carry imm16 to AX
+newtype ADC_AX_imm16 = ADC_AX_imm16 Word16
+
+-- | Add with carry imm32 to EAX
+newtype ADC_EAX_imm32 = ADC_EAX_imm32 Word32
+
+-- | Add with carry sign-extended imm32 to RAX
+newtype ADC_RAX_imm32 = ADC_RAX_imm32 Word32
+
+-- Machine code generation
+--------------------------
+
+instance Put ADC_AL_imm8 where
+  -- return offset of the imm8 value
+  type PutResult ADC_AL_imm8 = LocImm8
+
+  put (ADC_AL_imm8 v) = do
+    putOpcode 0x14
+    putImm8 v
+
+instance Put ADC_AX_imm16 where
+  -- return offset of the imm16 value
+  type PutResult ADC_AX_imm16 = LocImm16
+
+  put (ADC_AX_imm16 v) = do
+    setOperandSize16
+    putOpcode 0x15
+    putImm16 v
+
+instance Put ADC_EAX_imm32 where
+  -- return offset of the imm32 value
+  type PutResult ADC_EAX_imm32 = LocImm32
+
+  put (ADC_EAX_imm32 v) = do
+    setOperandSize32
+    putOpcode 0x15
+    putImm32 v
+
+instance Put ADC_RAX_imm32 where
+  -- return offset of the imm32 value
+  type PutResult ADC_RAX_imm32 = LocImm32SE
+
+  put (ADC_RAX_imm32 v) = do
+    putRexW
+    putOpcode 0x15
+    putImm32SE v
+
 
 
 -- > runCodeGen $ putADC_AL_imm8 (V 15) >> putADC_AL_imm8 (M "Imm8 marker") >> putADC_AL_imm8 (V 27) >> putADC_AX_imm16 (V 0x0102)

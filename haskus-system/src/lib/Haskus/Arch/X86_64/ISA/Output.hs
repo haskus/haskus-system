@@ -1,6 +1,5 @@
 module Haskus.Arch.X86_64.ISA.Output
   ( Output (..)
-  , Put (..)
   , Location
   , putW16
   , putW32
@@ -10,7 +9,6 @@ module Haskus.Arch.X86_64.ISA.Output
   , putI32
   , putI64
   , putAsciiZ
-  , putSeq
   )
 where
 
@@ -25,7 +23,7 @@ class Monad m => Output m where
   -- | Output the given byte
   putW8 :: Word8 -> m ()
 
-  -- | Return the number of bytes written
+  -- | Return current location (number of bytes already written)
   getLoc :: m Location
 
 -- | Output a 16-bit word
@@ -72,24 +70,8 @@ putI64 v = do
   putW32 (fromIntegral v)
   putW32 (fromIntegral (v `unsafeShiftR` 32))
 
--- | Output the given values in sequence
-putSeq :: (Output m, Put a) => [a] -> m ()
-putSeq xs = mapM_ put xs
-
 -- | Output the string in ASCII with a 0-ending character
 putAsciiZ :: Output m => [Char] -> m ()
 putAsciiZ s = do
   mapM_ (putW8 . fromIntegral . ord) s
   putW8 0
-
-class Put a where
-  put :: Output m => a -> m ()
-
-instance Put Word8  where put = putW8
-instance Put Word16 where put = putW16
-instance Put Word32 where put = putW32
-instance Put Word64 where put = putW64
-instance Put Int8   where put = putI8
-instance Put Int16  where put = putI16
-instance Put Int32  where put = putI32
-instance Put Int64  where put = putI64
