@@ -399,6 +399,9 @@ instance Num Word3 where
 modRM_OpcodeReg :: Word3 -> Word3 -> ModRM
 modRM_OpcodeReg opcode reg = ModRM Mod11 opcode reg
 
+modRM_RegReg :: Word3 -> Word3 -> ModRM
+modRM_RegReg reg1 reg2 = ModRM Mod11 reg1 reg2
+
 -- | Some registers are encoded with 3 bits, some others with 4 bits, some
 -- others can be encoded with either 3 or 4 bits.
 --
@@ -490,7 +493,29 @@ regRegEncoding c = (fmap toREX_R mextra, n)
     toREX_R = \case
       False -> REX_R_0
       True  -> REX_R_1
-  
+
+-- | Some instructions have two encodings because they have a reverse bit that
+-- can be used to switch source/destination operands. When operands are of the
+-- same type (e.g. r8/r8), we can set the reverse bit or not, and select the
+-- operand encoding order accordingly.
+data ReverseBit
+  = ReverseBit1
+  | ReverseBit0
+
+-- | Compute appropriate ModRM, REX_B, REX_R, and opcode, according to the
+-- reverse bit.
+reversable_RegRM :: ReverseBit -> Word8 -> RegCode -> RegCode -> (Field REX_R, Field REX_B, ModRM, Word8)
+reversable_RegRM rev opcode dst src = (rex_r, rex_b, modrm, opcode')
+  where
+    modrm        = modRM_RegReg reg rm
+    (rrm,rreg)   = case rev of
+                      ReverseBit0 -> (dst,src)
+                      ReverseBit1 -> (src,dst)
+    (rex_b, rm)  = regRMEncoding rrm
+    (rex_r, reg) = regRegEncoding rreg
+    opcode'      = case rev of
+                      ReverseBit0 -> opcode
+                      ReverseBit1 -> setBit opcode 1
 
 -- ========================================
 -- Instructions
@@ -552,25 +577,53 @@ newtype ADC_EAX_i32 = ADC_EAX_i32 Word32
 newtype ADC_RAX_i32 = ADC_RAX_i32 Word32
 
 -- | Add with carry 8-bit constant to 8-bit register
-data ADC_r8_i8 = ADC_r8_i8 RegCode Word8
+data ADC_r8_i8 = ADC_r8_i8 !RegCode !Word8
 
 -- | Add with carry 16-bit constant to 16-bit register
-data ADC_r16_i16 = ADC_r16_i16 RegCode Word16
+data ADC_r16_i16 = ADC_r16_i16 !RegCode !Word16
 
 -- | Add with carry 32-bit constant to 32-bit register
-data ADC_r32_i32 = ADC_r32_i32 RegCode Word32
+data ADC_r32_i32 = ADC_r32_i32 !RegCode !Word32
 
 -- | Add with carry sign-extended 32-bit constant to 64-bit register
-data ADC_r64_i32 = ADC_r64_i32 RegCode Word32
+data ADC_r64_i32 = ADC_r64_i32 !RegCode !Word32
 
 -- | Add with carry sign-extended 8-bit constant to 16-bit register
-data ADC_r16_i8 = ADC_r16_i8 RegCode Word8
+data ADC_r16_i8 = ADC_r16_i8 !RegCode !Word8
 
 -- | Add with carry sign-extended 8-bit constant to 32-bit register
-data ADC_r32_i8 = ADC_r32_i8 RegCode Word8
+data ADC_r32_i8 = ADC_r32_i8 !RegCode !Word8
 
 -- | Add with carry sign-extended 8-bit constant to 64-bit register
-data ADC_r64_i8 = ADC_r64_i8 RegCode Word8
+data ADC_r64_i8 = ADC_r64_i8 !RegCode !Word8
+
+-- | Add with carry two 8-bit registers
+data ADC_r8_r8 = ADC_r8_r8
+  { adc_r8_r8_dst :: !RegCode
+  , adc_r8_r8_src :: !RegCode
+  , adc_r8_r8_rev :: !ReverseBit
+  }
+
+-- | Add with carry two 16-bit registers
+data ADC_r16_r16 = ADC_r16_r16
+  { adc_r16_r16_dst :: !RegCode
+  , adc_r16_r16_src :: !RegCode
+  , adc_r16_r16_rev :: !ReverseBit
+  }
+
+-- | Add with carry two 32-bit registers
+data ADC_r32_r32 = ADC_r32_r32
+  { adc_r32_r32_dst :: !RegCode
+  , adc_r32_r32_src :: !RegCode
+  , adc_r32_r32_rev :: !ReverseBit
+  }
+
+-- | Add with carry two 64-bit registers
+data ADC_r64_r64 = ADC_r64_r64
+  { adc_r64_r64_dst :: !RegCode
+  , adc_r64_r64_src :: !RegCode
+  , adc_r64_r64_rev :: !ReverseBit
+  }
 
 -- | Add with carry 8-bit constant to 8-bit memory
 --data ADC_m8_i8 = ADC_m8_i8 EA Word8
@@ -689,6 +742,44 @@ instance Put ADC_r64_i8 where
     putOpcode 0x83
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm8SE v
+
+instance Put ADC_r8_r8 where
+  type PutResult ADC_r8_r8 = ()
+
+  put (ADC_r8_r8 dst src rev) = do
+    let (rex_r, rex_b, modrm, opcode) = reversable_RegRM rev 0x10 dst src
+    putRexWRXB Default rex_r Default rex_b
+    putOpcode opcode
+    putModRM modrm
+
+instance Put ADC_r16_r16 where
+  type PutResult ADC_r16_r16 = ()
+
+  put (ADC_r16_r16 dst src rev) = do
+    let (rex_r, rex_b, modrm, opcode) = reversable_RegRM rev 0x11 dst src
+    setOperandSize16
+    putRexWRXB Default rex_r Default rex_b
+    putOpcode opcode
+    putModRM modrm
+
+instance Put ADC_r32_r32 where
+  type PutResult ADC_r32_r32 = ()
+
+  put (ADC_r32_r32 dst src rev) = do
+    let (rex_r, rex_b, modrm, opcode) = reversable_RegRM rev 0x11 dst src
+    setOperandSize32
+    putRexWRXB Default rex_r Default rex_b
+    putOpcode opcode
+    putModRM modrm
+
+instance Put ADC_r64_r64 where
+  type PutResult ADC_r64_r64 = ()
+
+  put (ADC_r64_r64 dst src rev) = do
+    let (rex_r, rex_b, modrm, opcode) = reversable_RegRM rev 0x11 dst src
+    putRexWRXB (SetTo REX_W_1) rex_r Default rex_b
+    putOpcode opcode
+    putModRM modrm
 
 -- > runCodeGen $ putADC_AL_imm8 (V 15) >> putADC_AL_imm8 (M "Imm8 marker") >> putADC_AL_imm8 (V 27) >> putADC_AX_imm16 (V 0x0102)
 -- ((),CGState {cg_relocs = [RelocImm8 "Imm8 marker" 3], cg_bytes = [20,15,20,0,20,27,102,21,2,1], cg_pos = 10, cg_op_size = DefaultOperandSize32})
