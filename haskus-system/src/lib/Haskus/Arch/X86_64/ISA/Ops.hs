@@ -253,11 +253,6 @@ data REX_X
   = REX_X_0
   | REX_X_1
 
-data NeedRex
-  = MayHaveRex
-  | MustntHaveRex
-  | MustHaveRex
-
 -- | Put REX prefix
 putRex :: Asm m => REX_W -> REX_R -> REX_X -> REX_B -> m ()
 {-# INLINE putRex #-} -- inline as it often simplifies
@@ -426,25 +421,25 @@ extractRegCode (RawRegCode w) = (toRegBits w, toRegNum w)
 toRegCode :: RegBits -> RegNum -> RegCode
 toRegCode b n = RawRegCode (fromRegBits b .|. fromRegNum n)
 
-data MayEncode a
-  = MustEncode a
-  | MayEncode  a
-  | DontEncode
+data Field a
+  = FieldAbsent  -- ^ Need the field (e.g. REX.B) to be absent (i.e. no REX prefix at all)
+  | FieldDefault -- ^ The field may be present or not (we use its value by default)
+  | FieldSetTo a -- ^ Need the field (e.g. REX.B) to be present and set to the given value
   deriving (Functor)
 
 -- | Indicate if a register encoding requires an additional bit, and its value.
-regEncoding :: RegCode -> (MayEncode Bool, Word3)
+regEncoding :: RegCode -> (Field Bool, Word3)
 regEncoding (RegCode bits num) =
   let n = fromRegNum num
   in case bits of
-      Only3Bits -> (DontEncode              , Word3 n)
-      Only4Bits -> (MustEncode (testBit n 3), Word3 (n .&. 0b0111))
-      AnyBits   -> (MayEncode False         , Word3 n)
+      Only3Bits -> (FieldAbsent             , Word3 n)
+      Only4Bits -> (FieldSetTo (testBit n 3), Word3 (n .&. 0b0111))
+      AnyBits   -> (FieldDefault            , Word3 n)
 
 -- | Encode a register in RM field of ModRM
 --
 -- TODO: return ModRM_RM value instead of Word3
-regRMEncoding :: RegCode -> (MayEncode REX_B, Word3)
+regRMEncoding :: RegCode -> (Field REX_B, Word3)
 regRMEncoding c = (fmap toREX_B mextra, n)
   where
     (mextra,n) = regEncoding c
@@ -455,7 +450,7 @@ regRMEncoding c = (fmap toREX_B mextra, n)
 -- | Encode a register in Reg field of ModRM
 --
 -- TODO: return ModRM_Reg value instead of Word3
-regRegEncoding :: RegCode -> (MayEncode REX_R, Word3)
+regRegEncoding :: RegCode -> (Field REX_R, Word3)
 regRegEncoding c = (fmap toREX_R mextra, n)
   where
     (mextra,n) = regEncoding c
@@ -583,9 +578,9 @@ instance Put ADC_r8_i8 where
   put (ADC_r8_i8 r v) = do
     let (m_rex_b, r_lsb) = regRMEncoding r
     case m_rex_b of
-      DontEncode       -> pure ()
-      MayEncode _rex_b -> pure ()
-      MustEncode rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
+      FieldAbsent      -> pure ()
+      FieldDefault     -> pure ()
+      FieldSetTo rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
     putOpcode 0x80
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm8 v
@@ -598,9 +593,9 @@ instance Put ADC_r16_i16 where
     setOperandSize16
     let (m_rex_b, r_lsb) = regRMEncoding r
     case m_rex_b of
-      DontEncode       -> pure ()
-      MayEncode _rex_b -> pure ()
-      MustEncode rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
+      FieldAbsent      -> pure ()
+      FieldDefault     -> pure ()
+      FieldSetTo rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
     putOpcode 0x81
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm16 v
@@ -613,9 +608,9 @@ instance Put ADC_r32_i32 where
     setOperandSize32
     let (m_rex_b, r_lsb) = regRMEncoding r
     case m_rex_b of
-      DontEncode       -> pure ()
-      MayEncode _rex_b -> pure ()
-      MustEncode rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
+      FieldAbsent      -> pure ()
+      FieldDefault     -> pure ()
+      FieldSetTo rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
     putOpcode 0x81
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm32 v
@@ -627,9 +622,9 @@ instance Put ADC_r64_i32 where
   put (ADC_r64_i32 r v) = do
     let (m_rex_b, r_lsb) = regRMEncoding r
     case m_rex_b of
-      DontEncode       -> error "ADC_r64_i32: can't encode register argument"
-      MayEncode  rex_b -> putRex REX_W_1 REX_R_0 REX_X_0 rex_b
-      MustEncode rex_b -> putRex REX_W_1 REX_R_0 REX_X_0 rex_b
+      FieldAbsent      -> error "ADC_r64_i32: can't encode register argument"
+      FieldDefault     -> putRex REX_W_1 REX_R_0 REX_X_0 REX_B_0
+      FieldSetTo rex_b -> putRex REX_W_1 REX_R_0 REX_X_0 rex_b
     putOpcode 0x81
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm32SE v
