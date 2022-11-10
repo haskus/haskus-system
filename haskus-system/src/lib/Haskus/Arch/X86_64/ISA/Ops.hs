@@ -221,6 +221,9 @@ newtype LocImm64 = LocImm64 Location
 -- | Location of a sign-extended 32-bit value
 newtype LocImm32SE = LocImm32SE Location
 
+-- | Location of a sign-extended 8-bit value
+newtype LocImm8SE = LocImm8SE Location
+
 -- | Enable 16-bit operand size if it isn't the default
 setOperandSize16 :: Asm m => m ()
 setOperandSize16 = getOperandSize >>= \case
@@ -253,27 +256,51 @@ data REX_X
   = REX_X_0
   | REX_X_1
 
--- | Put REX prefix
-putRex :: Asm m => REX_W -> REX_R -> REX_X -> REX_B -> m ()
-{-# INLINE putRex #-} -- inline as it often simplifies
-putRex w r x b = putW8 (0b0100000
-                    .|. fromREX_W w
-                    .|. fromREX_R r
-                    .|. fromREX_X x
-                    .|. fromREX_B b)
+-- | Put REX prefix if needed
+--
+-- Throw an exception if constraints can't be fulfilled, i.e. some field
+-- requires the REX prefix to be absent and another requires it to be present.
+putRexWRXB :: Asm m => Field REX_W -> Field REX_R -> Field REX_X -> Field REX_B -> m ()
+{-# INLINE putRexWRXB #-} -- inline as it often simplifies
+putRexWRXB w r x b = case wrxb of
+    Absent  -> pure ()
+    Default -> pure ()
+    SetTo v -> putW8 (0b0100000 .|. v)
   where
-    fromREX_W = \case
-      REX_W_0 -> 0b0000
-      REX_W_1 -> 0b1000
-    fromREX_R = \case
-      REX_R_0 -> 0b0000
-      REX_R_1 -> 0b0100
-    fromREX_X = \case
-      REX_X_0 -> 0b0000
-      REX_X_1 -> 0b0010
-    fromREX_B = \case
-      REX_B_0 -> 0b0000
-      REX_B_1 -> 0b0001
+    wr = merge2 fromREX_W fromREX_R w r
+    xb = merge2 fromREX_X fromREX_B x b
+    wrxb = merge2 id id wr xb
+    {-# INLINE merge2 #-}
+    merge2 from_u from_v fu fv = case (fu,fv) of
+          (Absent  , Absent)  -> Absent
+          (Default , Default) -> Default
+          (Default , Absent)  -> Absent
+          (Absent  , Default) -> Absent
+          (SetTo _ , Absent)  -> error "REX prefix both needed and unallowed"
+          (Absent  , SetTo _) -> error "REX prefix both needed and unallowed"
+          (SetTo u , Default) -> SetTo (from_u u)
+          (Default , SetTo v) -> SetTo (from_v v)
+          (SetTo u , SetTo v) -> SetTo (from_u u .|. from_v v)
+
+fromREX_W :: REX_W -> Word8
+fromREX_W = \case
+  REX_W_0 -> 0b0000
+  REX_W_1 -> 0b1000
+
+fromREX_R :: REX_R -> Word8
+fromREX_R = \case
+  REX_R_0 -> 0b0000
+  REX_R_1 -> 0b0100
+
+fromREX_X :: REX_X -> Word8
+fromREX_X = \case
+  REX_X_0 -> 0b0000
+  REX_X_1 -> 0b0010
+
+fromREX_B :: REX_B -> Word8
+fromREX_B = \case
+  REX_B_0 -> 0b0000
+  REX_B_1 -> 0b0001
 
 putOpcode :: Asm m => Word8 -> m ()
 putOpcode = putW8
@@ -294,6 +321,12 @@ putImm32 :: Asm m => Word32 -> m LocImm32
 putImm32 v = do
   loc <- LocImm32 <$> getLoc
   putW32 v
+  pure loc
+
+putImm8SE :: Asm m => Word8 -> m LocImm8SE
+putImm8SE v = do
+  loc <- LocImm8SE <$> getLoc
+  putW8 v
   pure loc
 
 putImm32SE :: Asm m => Word32 -> m LocImm32SE
@@ -422,9 +455,9 @@ toRegCode :: RegBits -> RegNum -> RegCode
 toRegCode b n = RawRegCode (fromRegBits b .|. fromRegNum n)
 
 data Field a
-  = FieldAbsent  -- ^ Need the field (e.g. REX.B) to be absent (i.e. no REX prefix at all)
-  | FieldDefault -- ^ The field may be present or not (we use its value by default)
-  | FieldSetTo a -- ^ Need the field (e.g. REX.B) to be present and set to the given value
+  = Absent  -- ^ Need the field (e.g. REX.B) to be absent (i.e. no REX prefix at all)
+  | Default -- ^ The field may be present or not (we use its value by default)
+  | SetTo a -- ^ Need the field (e.g. REX.B) to be present and set to the given value
   deriving (Functor)
 
 -- | Indicate if a register encoding requires an additional bit, and its value.
@@ -432,9 +465,9 @@ regEncoding :: RegCode -> (Field Bool, Word3)
 regEncoding (RegCode bits num) =
   let n = fromRegNum num
   in case bits of
-      Only3Bits -> (FieldAbsent             , Word3 n)
-      Only4Bits -> (FieldSetTo (testBit n 3), Word3 (n .&. 0b0111))
-      AnyBits   -> (FieldDefault            , Word3 n)
+      Only3Bits -> (Absent             , Word3 n)
+      Only4Bits -> (SetTo (testBit n 3), Word3 (n .&. 0b0111))
+      AnyBits   -> (Default            , Word3 n)
 
 -- | Encode a register in RM field of ModRM
 --
@@ -530,6 +563,15 @@ data ADC_r32_i32 = ADC_r32_i32 RegCode Word32
 -- | Add with carry sign-extended 32-bit constant to 64-bit register
 data ADC_r64_i32 = ADC_r64_i32 RegCode Word32
 
+-- | Add with carry sign-extended 8-bit constant to 16-bit register
+data ADC_r16_i8 = ADC_r16_i8 RegCode Word8
+
+-- | Add with carry sign-extended 8-bit constant to 32-bit register
+data ADC_r32_i8 = ADC_r32_i8 RegCode Word8
+
+-- | Add with carry sign-extended 8-bit constant to 64-bit register
+data ADC_r64_i8 = ADC_r64_i8 RegCode Word8
+
 -- | Add with carry 8-bit constant to 8-bit memory
 --data ADC_m8_i8 = ADC_m8_i8 EA Word8
 
@@ -576,11 +618,8 @@ instance Put ADC_r8_i8 where
   type PutResult ADC_r8_i8 = LocImm8
 
   put (ADC_r8_i8 r v) = do
-    let (m_rex_b, r_lsb) = regRMEncoding r
-    case m_rex_b of
-      FieldAbsent      -> pure ()
-      FieldDefault     -> pure ()
-      FieldSetTo rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
+    let (rex_b, r_lsb) = regRMEncoding r
+    putRexWRXB Default Default Default rex_b
     putOpcode 0x80
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm8 v
@@ -591,11 +630,8 @@ instance Put ADC_r16_i16 where
 
   put (ADC_r16_i16 r v) = do
     setOperandSize16
-    let (m_rex_b, r_lsb) = regRMEncoding r
-    case m_rex_b of
-      FieldAbsent      -> pure ()
-      FieldDefault     -> pure ()
-      FieldSetTo rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
+    let (rex_b, r_lsb) = regRMEncoding r
+    putRexWRXB Default Default Default rex_b
     putOpcode 0x81
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm16 v
@@ -606,28 +642,53 @@ instance Put ADC_r32_i32 where
 
   put (ADC_r32_i32 r v) = do
     setOperandSize32
-    let (m_rex_b, r_lsb) = regRMEncoding r
-    case m_rex_b of
-      FieldAbsent      -> pure ()
-      FieldDefault     -> pure ()
-      FieldSetTo rex_b -> putRex REX_W_0 REX_R_0 REX_X_0 rex_b
+    let (rex_b, r_lsb) = regRMEncoding r
+    putRexWRXB Default Default Default rex_b
     putOpcode 0x81
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm32 v
 
 instance Put ADC_r64_i32 where
-  -- return offset of the imm32 value
   type PutResult ADC_r64_i32 = LocImm32SE
 
   put (ADC_r64_i32 r v) = do
-    let (m_rex_b, r_lsb) = regRMEncoding r
-    case m_rex_b of
-      FieldAbsent      -> error "ADC_r64_i32: can't encode register argument"
-      FieldDefault     -> putRex REX_W_1 REX_R_0 REX_X_0 REX_B_0
-      FieldSetTo rex_b -> putRex REX_W_1 REX_R_0 REX_X_0 rex_b
+    let (rex_b, r_lsb) = regRMEncoding r
+    putRexWRXB (SetTo REX_W_1) Default Default rex_b
     putOpcode 0x81
     putModRM (modRM_OpcodeReg 2 r_lsb)
     putImm32SE v
+
+instance Put ADC_r16_i8 where
+  type PutResult ADC_r16_i8 = LocImm8SE
+
+  put (ADC_r16_i8 r v) = do
+    setOperandSize16
+    let (rex_b, r_lsb) = regRMEncoding r
+    putRexWRXB Default Default Default rex_b
+    putOpcode 0x83
+    putModRM (modRM_OpcodeReg 2 r_lsb)
+    putImm8SE v
+
+instance Put ADC_r32_i8 where
+  type PutResult ADC_r32_i8 = LocImm8SE
+
+  put (ADC_r32_i8 r v) = do
+    setOperandSize32
+    let (rex_b, r_lsb) = regRMEncoding r
+    putRexWRXB Default Default Default rex_b
+    putOpcode 0x83
+    putModRM (modRM_OpcodeReg 2 r_lsb)
+    putImm8SE v
+
+instance Put ADC_r64_i8 where
+  type PutResult ADC_r64_i8 = LocImm8SE
+
+  put (ADC_r64_i8 r v) = do
+    let (rex_b, r_lsb) = regRMEncoding r
+    putRexWRXB (SetTo REX_W_1) Default Default rex_b
+    putOpcode 0x83
+    putModRM (modRM_OpcodeReg 2 r_lsb)
+    putImm8SE v
 
 -- > runCodeGen $ putADC_AL_imm8 (V 15) >> putADC_AL_imm8 (M "Imm8 marker") >> putADC_AL_imm8 (V 27) >> putADC_AX_imm16 (V 0x0102)
 -- ((),CGState {cg_relocs = [RelocImm8 "Imm8 marker" 3], cg_bytes = [20,15,20,0,20,27,102,21,2,1], cg_pos = 10, cg_op_size = DefaultOperandSize32})
