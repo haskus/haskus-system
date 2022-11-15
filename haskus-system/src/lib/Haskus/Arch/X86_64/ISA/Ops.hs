@@ -396,6 +396,24 @@ instance Num Word3 where
   signum _              = Word3 1
   negate _              = error "negate for Word3 not supported"
 
+-- | Assert that a Word8 is on 2 bits
+assertWord2 :: Word8 -> Word2
+assertWord2 w
+  | w .&. 0b11111100 == 0 = Word2 w
+  | otherwise = error $ "assertWord2: number too large (" ++ show w ++ ")"
+
+-- | 2-bit word
+newtype Word2 = Word2 { fromWord2 :: Word8 }
+
+instance Num Word2 where
+  fromInteger v         = assertWord2 (fromInteger v)
+  (Word2 a) + (Word2 b) = Word2 ((a+b) .&. 0b11)
+  (Word2 a) * (Word2 b) = Word2 ((a*b) .&. 0b11)
+  abs a                 = a
+  signum (Word2 0)      = Word2 0
+  signum _              = Word2 1
+  negate _              = error "negate for Word2 not supported"
+
 modRM_OpcodeReg :: Word3 -> Word3 -> ModRM
 modRM_OpcodeReg opcode reg = ModRM Mod11 opcode reg
 
@@ -517,6 +535,45 @@ reversable_RegRM rev opcode dst src = (rex_r, rex_b, modrm, opcode')
                       ReverseBit0 -> opcode
                       ReverseBit1 -> setBit opcode 1
 
+data EffectiveAddress
+  = EA_base        !RegCode        -- ^ [reg]
+  | EA_RIP_disp32  !Word32         -- ^ [RIP] + disp32
+  | EA_base_disp8  !RegCode !Word8 -- ^ [reg] + disp8
+  | EA_base_disp32 !RegCode !Word8 -- ^ [reg] + disp32
+  | EA_SIB         !SIB
+  | EA_SIB_disp8   !SIB !Word8
+  | EA_SIB_disp32  !SIB !Word32
+
+data SIB
+  = SIB_index_base !Scale !RegCode !RegCode
+  | SIB_base_only  !RegCode
+  | SIB_index_only !Scale !RegCode
+
+newtype Scale = Scale Word2
+
+scale1, scale2, scale4, scale8 :: Scale
+scale1 = Scale 0b00
+scale2 = Scale 0b01
+scale4 = Scale 0b10
+scale8 = Scale 0b11
+
+-- | Some effective addresses can't be directly represented, e.g. [RBP] must be
+-- encoded as [RBP]+0 (i.e. with a displacement of 0) because the encoding for
+-- [RBP] is taken to mean something else.
+--
+-- This function deals with all these silly cases.
+canonicalizeEA :: EffectiveAddress -> EffectiveAddress
+canonicalizeEA = \case
+  EA_base r@(RegCode _bits (RegNum b))
+    -- 0b100 code for RSP/R12 is taken to enable SIB addressing mode
+    | (b .&. 0b111) == 0b100 -> EA_SIB (SIB_base_only r)
+
+    -- 0b101 code for RBP/R13 is taken to enable RIP addressing mode
+    | (b .&. 0b111) == 0b101 -> EA_base_disp8 r 0
+
+  other -> other
+
+
 -- ========================================
 -- Instructions
 -- ========================================
@@ -626,7 +683,11 @@ data ADC_r64_r64 = ADC_r64_r64
   }
 
 -- | Add with carry 8-bit constant to 8-bit memory
---data ADC_m8_i8 = ADC_m8_i8 EA Word8
+--data ADC_m8_i8 = ADC_m8_i8 Lock EA Word8
+
+-- segment override
+-- address size override
+-- lock
 
 -- Machine code generation
 --------------------------
