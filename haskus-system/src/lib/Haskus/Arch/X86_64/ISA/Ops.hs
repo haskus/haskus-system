@@ -290,18 +290,22 @@ putRexW = putW8 0b01001000
 data REX_B
   = REX_B_0
   | REX_B_1
+  deriving (Show,Eq,Ord)
 
 data REX_R
   = REX_R_0
   | REX_R_1
+  deriving (Show,Eq,Ord)
 
 data REX_W
   = REX_W_0
   | REX_W_1
+  deriving (Show,Eq,Ord)
 
 data REX_X
   = REX_X_0
   | REX_X_1
+  deriving (Show,Eq,Ord)
 
 -- | Put REX prefix if needed
 --
@@ -433,6 +437,9 @@ newtype FieldRM_reg = FieldRM_reg { unFieldRM_reg :: Word3 }
 
 -- | ModRM's RM field contents for a base register
 newtype FieldRM_base = FieldRM_base { unFieldRM_base :: Word3 }
+
+-- | Field contents for an index register
+newtype Field_index = Field_index { unField_index :: Word3 }
 
 -- | ModRM's Reg field contents for a register
 newtype FieldReg_reg = FieldReg_reg { unFieldReg_reg :: Word3 }
@@ -571,7 +578,7 @@ data Field a
   = Absent  -- ^ Need the field (e.g. REX.B) to be absent (i.e. no REX prefix at all)
   | Default -- ^ The field may be present or not (we use its value by default)
   | SetTo a -- ^ Need the field (e.g. REX.B) to be present and set to the given value
-  deriving (Functor)
+  deriving (Eq,Ord,Functor)
 
 -- | Indicate if a register encoding requires an additional bit, and its value.
 regEncoding :: RegCode -> (Field Bool, Word3)
@@ -599,6 +606,15 @@ encodeFieldRM_base c = (fmap toREX_B mextra, FieldRM_base n)
     toREX_B = \case
       False -> REX_B_0
       True  -> REX_B_1
+
+-- | Encode an index register
+encodeField_index :: RegCode -> (Field REX_X, Field_index)
+encodeField_index c = (fmap toREX_X mextra, Field_index n)
+  where
+    (mextra,n) = regEncoding c
+    toREX_X = \case
+      False -> REX_X_0
+      True  -> REX_X_1
 
 -- | Encode a register in Reg field of ModRM
 encodeFieldReg_reg :: RegCode -> (Field REX_R, FieldReg_reg)
@@ -663,16 +679,20 @@ putAddrSizeOverride = \case
   Addr32 -> putW8 0x67
 
 data Addr = Addr
-  { addr_ea      :: !EAddr            -- ^ Effective address
+  { addr_ea      :: !Addr64           -- ^ Effective address
   , addr_segment :: !(Maybe Segment)  -- ^ Segment override
   , addr_size    :: !(Maybe AddrSize) -- ^ Address-size override
   }
 
-data EAddr = EAddr
-  { ea_base  :: !(Maybe RegCode) -- ^ Base register
-  , ea_index :: !(Maybe RegCode) -- ^ Index register
-  , ea_scale :: !Scale           -- ^ Index scale
-  , ea_disp  :: !(Maybe EADisp)  -- ^ Optional displacement
+data Addr64
+  = RIPRelative !Disp32       -- ^ RIP + disp32
+  | BaseScaledIndexDisp !BSID -- ^ base + scaled index + disp
+
+data BSID = BSID
+  { bsid_base  :: !(Maybe RegCode) -- ^ Base register
+  , bsid_index :: !(Maybe RegCode) -- ^ Index register
+  , bsid_scale :: !Scale           -- ^ Index scale
+  , bsid_disp  :: !(Maybe EADisp)  -- ^ Optional displacement
   }
 
 data EADisp
@@ -715,10 +735,10 @@ computeAddrFields (Addr ea mseg msize)
   where
     -- we don't remove redundant segment override here, the responsibility is
     -- left to the caller to canonicalize the address.
-    (m_mod, m_rm, sib, disp, rex_x, rex_b) = computeEAddrFields ea
+    (m_mod, m_rm, sib, disp, rex_x, rex_b) = computeAddr64Fields ea
 
-computeEAddrFields
-  :: EAddr
+computeAddr64Fields
+  :: Addr64
   -> ( MemMod
      , FieldRM_mem
      , Maybe SIB
@@ -726,46 +746,104 @@ computeEAddrFields
      , Field REX_X
      , Field REX_B
      )
-computeEAddrFields = \case
-  -- encode address 0 as disp8 of 0
-  EAddr Nothing Nothing scale Nothing
-    -> computeEAddrFields (EAddr Nothing Nothing scale (Just (EADisp8 (Disp8 0))))
+computeAddr64Fields = \case
+  BaseScaledIndexDisp bsid -> computeBSIDFields bsid
 
-  -- encode disp8 only as disp32 only
-  EAddr Nothing Nothing scale (Just (EADisp8 (Disp8 d)))
-    -> computeEAddrFields (EAddr Nothing Nothing scale (Just (EADisp32 (Disp32 (fromIntegral d)))))
-
-  -- encode disp32 only (using SIB)
-  EAddr Nothing Nothing scale (Just (EADisp32 d))
+  -- RIP+disp32 addressing
+  -- (does it support segment override?)
+  RIPRelative disp32
     -> ( MemMod00
-       , FieldRM_mem 0b100
-       , Just (SIB scale 0b100 0b101)
-       , SomeDisp32 d
+       , FieldRM_mem 0b101
+       , Nothing
+       , SomeDisp32 disp32
        , Default
        , Default
        )
 
-  -- TODO: RIP+disp32 addressing
-  -- (does it support segment override?)
+
+computeBSIDFields
+  :: BSID
+  -> ( MemMod
+     , FieldRM_mem
+     , Maybe SIB
+     , DispMaybe
+     , Field REX_X
+     , Field REX_B
+     )
+computeBSIDFields = \case
+  -- encode empty address as disp8 of 0
+  BSID Nothing Nothing scale Nothing
+    -> computeBSIDFields (BSID Nothing Nothing scale (Just (EADisp8 (Disp8 0))))
+
+  -- Encode disp only (using SIB)
+  --
+  -- Disp32 only without SIB isn't available in 64-bit mode: it has been
+  -- replaced with RIP+disp32.
+  -- Disp8 only without has never been available.
+  BSID Nothing Nothing scale (Just disp)
+    -> ( case disp of
+          EADisp8 _  -> MemMod01
+          EADisp32 _ -> MemMod10
+       , FieldRM_mem 0b100
+       , Just (SIB scale 0b100 0b101)
+       , case disp of
+          EADisp32 d -> SomeDisp32 d
+          EADisp8  d -> SomeDisp8 d
+       , Default
+       , Default
+       )
+
+  -- using RSP as an index register isn't possible.
+  BSID base (Just index) scale disp
+    | (rex_x, Field_index rm) <- encodeField_index index
+    , rm == 0b100            -- RSP or R12
+    , rex_x /= SetTo REX_X_1 -- definitely RSP
+    -> case (base,scale) of
+        -- try to transform it into a base register if
+        --  scale=1
+        --  no base register already in use
+        (Nothing,Scale1) -> computeBSIDFields (BSID (Just index) Nothing Scale1 disp)
+
+        -- otherwise fail
+        _ -> error "RSP can't be used as an index register"
 
   -- base register lower bits are 0b101 (rBP, r13) without disp
-  -- Need to be encoded with disp=0
-  EAddr b@(Just base) index scale Nothing
+  -- Need to be encoded with disp=0.
+  --
+  -- rm = 0b101 is used to encoded RIP+disp32
+  BSID b@(Just base) index scale Nothing
     | (_rex_b, FieldRM_base rm) <- encodeFieldRM_base base
     , rm == 0b101
-    -> computeEAddrFields (EAddr b index scale (Just (EADisp8 (Disp8 0))))
+    -> computeBSIDFields (BSID b index scale (Just (EADisp8 (Disp8 0))))
 
-  -- base register lower bits are 0b101 (rBP, r13) with disp
-  EAddr (Just base) Nothing _scale (Just eadisp)
-    | (rex_b, FieldRM_base rm) <- encodeFieldRM_base base
-    , rm == 0b101
-    , (mode,disp) <- case eadisp of
-        EADisp8  d -> (MemMod01, SomeDisp8 d)
-        EADisp32 d -> (MemMod10, SomeDisp32 d)
-    -> (mode, FieldRM_mem rm, Nothing, disp, Default, rex_b)
+  -- base register lower bits are 0b100 (rSP, r12), requires SIB byte
+  BSID (Just base) mindex scale mdisp
+    | (rex_b, FieldRM_base ase) <- encodeFieldRM_base base
+    , ase == 0b100
+    ->
+      let (rex_x, idx) = case mindex of
+            Nothing -> (Default, 0b100)
+            Just i  -> case encodeField_index i of
+              -- the case where the index is RSP is handled above.
+              -- We don't have to handle it here.
+              (x, Field_index ix) -> (x,ix)
+      in
+       ( case mdisp of
+          Nothing           -> MemMod00
+          Just (EADisp8 _)  -> MemMod01
+          Just (EADisp32 _) -> MemMod10
+       , FieldRM_mem 0b100
+       , Just (SIB scale idx ase)
+       , case mdisp of
+          Nothing           -> NoDisp
+          Just (EADisp32 d) -> SomeDisp32 d
+          Just (EADisp8  d) -> SomeDisp8 d
+       , rex_x
+       , rex_b
+       )
 
   -- base register lower bits different from 0b100 and 0b101 (handled above)
-  EAddr (Just base) Nothing _scale mdisp
+  BSID (Just base) Nothing _scale mdisp
     | (rex_b, FieldRM_base rm) <- encodeFieldRM_base base
     , (mode,disp) <- case mdisp of
         Nothing           -> (MemMod00, NoDisp)
@@ -773,8 +851,48 @@ computeEAddrFields = \case
         Just (EADisp32 d) -> (MemMod10, SomeDisp32 d)
     -> (mode, FieldRM_mem rm, Nothing, disp, Default, rex_b)
 
+  -- no base register: force the encoding of an empty Disp32 if needed
+  BSID Nothing (Just index) scale mdisp
+    ->
+      let (rex_x, Field_index idx) = encodeField_index index
+            -- the case where the index is RSP is handled above.
+            -- We don't have to handle it here.
+      in
+       ( MemMod00
+       , FieldRM_mem 0b100
+       , Just (SIB scale idx 0b101)
+       , case mdisp of
+          Nothing                   -> SomeDisp32 (Disp32 0)
+          Just (EADisp32 d)         -> SomeDisp32 d
+          Just (EADisp8  (Disp8 d)) -> SomeDisp32 (Disp32 (fromIntegral d))
+       , rex_x
+       , Default
+       )
 
-  -- base register lower bits are 0b100 (rSP, r12), requires SIB byte
+  -- base and index
+  BSID (Just base) (Just index) scale mdisp
+    ->
+      let (rex_x, Field_index idx) = encodeField_index index
+            -- the case where the index is RSP is handled above.
+            -- We don't have to handle it here.
+          (rex_b, FieldRM_base ase) = encodeFieldRM_base base
+            -- the case where the base is RBP is handled above.
+            -- We don't have to handle it here.
+      in
+       ( case mdisp of
+          Nothing           -> MemMod00
+          Just (EADisp8 _)  -> MemMod01
+          Just (EADisp32 _) -> MemMod10
+       , FieldRM_mem 0b100
+       , Just (SIB scale idx ase)
+       , case mdisp of
+          Nothing           -> NoDisp
+          Just (EADisp32 d) -> SomeDisp32 d
+          Just (EADisp8  d) -> SomeDisp8 d
+       , rex_x
+       , rex_b
+       )
+
 
 newtype SIB = RawSIB Word8
 
