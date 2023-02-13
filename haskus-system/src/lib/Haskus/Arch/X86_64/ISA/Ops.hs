@@ -1069,6 +1069,27 @@ data ADC_m8_i8 = ADC_m8_i8
   , adc_m8_i8_src  :: !Word8
   }
 
+-- | Add imm16 to mem16 + CF
+data ADC_m16_i16 = ADC_m16_i16
+  { adc_m16_i16_lock :: !Lock
+  , adc_m16_i16_dst  :: !Addr
+  , adc_m16_i16_src  :: !Word16
+  }
+
+-- | Add imm32 to mem32 + CF
+data ADC_m32_i32 = ADC_m32_i32
+  { adc_m32_i32_lock :: !Lock
+  , adc_m32_i32_dst  :: !Addr
+  , adc_m32_i32_src  :: !Word32
+  }
+
+-- | Add imm32sx to mem64 + CF
+data ADC_m64_i32sx = ADC_m64_i32sx
+  { adc_m64_i32sx_lock :: !Lock
+  , adc_m64_i32sx_dst  :: !Addr
+  , adc_m64_i32sx_src  :: !Word32
+  }
+
 -- Machine code generation
 --------------------------
 
@@ -1222,6 +1243,56 @@ instance Put ADC_m8_i8 where
     sibMaybe msib
     loc_disp <- dispMaybe disp
     loc_imm <- i8 v
+    pure (loc_disp, loc_imm)
+
+instance Put ADC_m16_i16 where
+  type PutResult ADC_m16_i16 = (LocDispMaybe, LocImm16)
+
+  put (ADC_m16_i16 lock m v) = do
+    let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+    lockMaybe lock
+    segMaybe mseg
+    addrSizeMaybe masize
+    os16
+    rex W R x b
+    oc 0x81
+    ocxMem 2 m_mod m_rm
+    sibMaybe msib
+    loc_disp <- dispMaybe disp
+    loc_imm <- i16 v
+    pure (loc_disp, loc_imm)
+
+instance Put ADC_m32_i32 where
+  type PutResult ADC_m32_i32 = (LocDispMaybe, LocImm32)
+
+  put (ADC_m32_i32 lock m v) = do
+    let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+    lockMaybe lock
+    segMaybe mseg
+    addrSizeMaybe masize
+    os32
+    rex W R x b
+    oc 0x81
+    ocxMem 2 m_mod m_rm
+    sibMaybe msib
+    loc_disp <- dispMaybe disp
+    loc_imm <- i32 v
+    pure (loc_disp, loc_imm)
+
+instance Put ADC_m64_i32sx where
+  type PutResult ADC_m64_i32sx = (LocDispMaybe, LocImm32sx)
+
+  put (ADC_m64_i32sx lock m v) = do
+    let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+    lockMaybe lock
+    segMaybe mseg
+    addrSizeMaybe masize
+    rex W1 R x b
+    oc 0x81
+    ocxMem 2 m_mod m_rm
+    sibMaybe msib
+    loc_disp <- dispMaybe disp
+    loc_imm <- i32sx v
     pure (loc_disp, loc_imm)
 
 -- > runCodeGen $ putADC_AL_imm8 (V 15) >> putADC_AL_imm8 (M "Imm8 marker") >> putADC_AL_imm8 (V 27) >> putADC_AX_imm16 (V 0x0102)
