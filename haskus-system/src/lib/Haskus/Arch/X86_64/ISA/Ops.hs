@@ -219,7 +219,7 @@ newtype LocImm32 = LocImm32 Location
 newtype LocImm64 = LocImm64 Location
 
 -- | Location of a sign-extended 32-bit value
-newtype LocImm32SE = LocImm32SE Location
+newtype LocImm32sx = LocImm32sx Location
 
 -- | Location of a sign-extended 8-bit value
 newtype LocImm8SE = LocImm8SE Location
@@ -239,20 +239,20 @@ newtype Disp8  = Disp8  Word8
 newtype Disp16 = Disp16 Word16
 newtype Disp32 = Disp32 Word32
 
-putDisp8 :: Output m => Disp8 -> m LocDisp8
-putDisp8 (Disp8 v) = do
+disp8 :: Output m => Disp8 -> m LocDisp8
+disp8 (Disp8 v) = do
   loc <- LocDisp8 <$> getLoc
   putW8 v
   pure loc
 
-putDisp16 :: Output m => Disp16 -> m LocDisp16
-putDisp16 (Disp16 v) = do
+disp16 :: Output m => Disp16 -> m LocDisp16
+disp16 (Disp16 v) = do
   loc <- LocDisp16 <$> getLoc
   putW16 v
   pure loc
 
-putDisp32 :: Output m => Disp32 -> m LocDisp32
-putDisp32 (Disp32 v) = do
+disp32 :: Output m => Disp32 -> m LocDisp32
+disp32 (Disp32 v) = do
   loc <- LocDisp32 <$> getLoc
   putW32 v
   pure loc
@@ -264,28 +264,28 @@ data DispMaybe
   | SomeDisp16 !Disp16
   | SomeDisp32 !Disp32
 
-putDispMaybe :: Output m => DispMaybe -> m LocDispMaybe
-putDispMaybe = \case
+dispMaybe :: Output m => DispMaybe -> m LocDispMaybe
+dispMaybe = \case
   NoDisp      -> pure NoLocDisp
-  SomeDisp8  d -> SomeLocDisp8  <$> putDisp8 d
-  SomeDisp16 d -> SomeLocDisp16 <$> putDisp16 d
-  SomeDisp32 d -> SomeLocDisp32 <$> putDisp32 d
+  SomeDisp8  d -> SomeLocDisp8  <$> disp8 d
+  SomeDisp16 d -> SomeLocDisp16 <$> disp16 d
+  SomeDisp32 d -> SomeLocDisp32 <$> disp32 d
 
 -- | Enable 16-bit operand size if it isn't the default
-setOperandSize16 :: Asm m => m ()
-setOperandSize16 = getOperandSize >>= \case
+os16 :: Asm m => m ()
+os16 = getOperandSize >>= \case
   DefaultOperandSize16 -> pure ()
   DefaultOperandSize32 -> putW8 0x66
 
 -- | Enable 32-bit operand size if it isn't the default
-setOperandSize32 :: Asm m => m ()
-setOperandSize32 = getOperandSize >>= \case
+os32 :: Asm m => m ()
+os32 = getOperandSize >>= \case
   DefaultOperandSize16 -> putW8 0x66
   DefaultOperandSize32 -> pure ()
-  
+
 -- | Enable 64-bit operand size (REX.W)
-putRexW :: Asm m => m ()
-putRexW = putW8 0b01001000
+rexW :: Asm m => m ()
+rexW = putW8 0b01001000
 
 data REX_B
   = REX_B_0
@@ -307,13 +307,49 @@ data REX_X
   | REX_X_1
   deriving (Show,Eq,Ord)
 
+pattern W0 :: Field REX_W
+pattern W0 = SetTo REX_W_0
+
+pattern W1 :: Field REX_W
+pattern W1 = SetTo REX_W_1
+
+pattern W :: Field REX_W
+pattern W = Default
+
+pattern R0 :: Field REX_R
+pattern R0 = SetTo REX_R_0
+
+pattern R1 :: Field REX_R
+pattern R1 = SetTo REX_R_1
+
+pattern R :: Field REX_R
+pattern R = Default
+
+pattern X0 :: Field REX_X
+pattern X0 = SetTo REX_X_0
+
+pattern X1 :: Field REX_X
+pattern X1 = SetTo REX_X_1
+
+pattern X :: Field REX_X
+pattern X = Default
+
+pattern B0 :: Field REX_B
+pattern B0 = SetTo REX_B_0
+
+pattern B1 :: Field REX_B
+pattern B1 = SetTo REX_B_1
+
+pattern B :: Field REX_B
+pattern B = Default
+
 -- | Put REX prefix if needed
 --
 -- Throw an exception if constraints can't be fulfilled, i.e. some field
 -- requires the REX prefix to be absent and another requires it to be present.
-putRexWRXB :: Asm m => Field REX_W -> Field REX_R -> Field REX_X -> Field REX_B -> m ()
-{-# INLINE putRexWRXB #-} -- inline as it often simplifies
-putRexWRXB w r x b = case wrxb of
+rex :: Asm m => Field REX_W -> Field REX_R -> Field REX_X -> Field REX_B -> m ()
+{-# INLINE rex #-} -- inline as it often simplifies
+rex w r x b = case wrxb of
     Absent  -> pure ()
     Default -> pure ()
     SetTo v -> putW8 (0b0100000 .|. v)
@@ -353,41 +389,41 @@ fromREX_B = \case
   REX_B_0 -> 0b0000
   REX_B_1 -> 0b0001
 
-putOpcode :: Asm m => Word8 -> m ()
-putOpcode = putW8
+oc :: Asm m => Word8 -> m ()
+oc = putW8
 
-putImm8 :: Asm m => Word8 -> m LocImm8
-putImm8 v = do
+i8 :: Asm m => Word8 -> m LocImm8
+i8 v = do
   loc <- LocImm8 <$> getLoc
   putW8 v
   pure loc
 
-putImm16 :: Asm m => Word16 -> m LocImm16
-putImm16 v = do
+i16 :: Asm m => Word16 -> m LocImm16
+i16 v = do
   loc <- LocImm16 <$> getLoc
   putW16 v
   pure loc
 
-putImm32 :: Asm m => Word32 -> m LocImm32
-putImm32 v = do
+i32 :: Asm m => Word32 -> m LocImm32
+i32 v = do
   loc <- LocImm32 <$> getLoc
   putW32 v
   pure loc
 
-putImm8SE :: Asm m => Word8 -> m LocImm8SE
-putImm8SE v = do
+i8sx :: Asm m => Word8 -> m LocImm8SE
+i8sx v = do
   loc <- LocImm8SE <$> getLoc
   putW8 v
   pure loc
 
-putImm32SE :: Asm m => Word32 -> m LocImm32SE
-putImm32SE v = do
-  loc <- LocImm32SE <$> getLoc
+i32sx :: Asm m => Word32 -> m LocImm32sx
+i32sx v = do
+  loc <- LocImm32sx <$> getLoc
   putW32 v
   pure loc
 
-putLock :: Output m => Lock -> m ()
-putLock = \case
+lockMaybe :: Output m => Lock -> m ()
+lockMaybe = \case
   Lock   -> putW8 0xF0
   NoLock -> pure ()
 
@@ -504,13 +540,17 @@ instance Num Word2 where
 modRM_OpcodeReg :: FieldReg_opcode -> FieldRM_reg -> ModRM
 modRM_OpcodeReg opcode reg = ModRM Mod11 (unFieldReg_opcode opcode) (unFieldRM_reg reg)
 
--- | Put opcode, opcode extension, and register
+-- | Put opcode extension and register as arguments
 --
 -- Opcode extension and register are stored in ModRM.{reg,rm} respectively.
-putOpcodeExt_Reg :: Asm m => Word8 -> Word3 -> FieldRM_reg -> m ()
-putOpcodeExt_Reg opcode ext reg = do
-  putOpcode opcode
-  putModRM (modRM_OpcodeReg (FieldReg_opcode ext) reg)
+ocxReg :: Asm m => Word3 -> FieldRM_reg -> m ()
+ocxReg ext reg = putModRM (modRM_OpcodeReg (FieldReg_opcode ext) reg)
+
+-- | Put opcode extension and address as arguments
+--
+-- Opcode extension and address are stored in ModRM.{reg,rm} respectively.
+ocxMem :: Asm m => Word3 -> MemMod -> FieldRM_mem -> m ()
+ocxMem ext md rm = putModRM (modRM_OpcodeMem (FieldReg_opcode ext) md rm)
 
 modRM_RegReg :: FieldReg_reg -> FieldRM_reg -> ModRM
 modRM_RegReg reg1 reg2 = ModRM Mod11 (unFieldReg_reg reg1) (unFieldRM_reg reg2)
@@ -590,8 +630,8 @@ regEncoding (RegCode bits num) =
       AnyBits   -> (Default            , Word3 n)
 
 -- | Encode a register in RM field of ModRM
-encodeFieldRM_reg :: RegCode -> (Field REX_B, FieldRM_reg)
-encodeFieldRM_reg c = (fmap toREX_B mextra, FieldRM_reg n)
+regRM :: RegCode -> (Field REX_B, FieldRM_reg)
+regRM c = (fmap toREX_B mextra, FieldRM_reg n)
   where
     (mextra,n) = regEncoding c
     toREX_B = \case
@@ -635,14 +675,14 @@ data ReverseBit
 
 -- | Compute appropriate ModRM, REX_B, REX_R, and opcode, according to the
 -- reverse bit.
-reversable_RegRM :: ReverseBit -> Word8 -> RegCode -> RegCode -> (Field REX_R, Field REX_B, ModRM, Word8)
-reversable_RegRM rev opcode dst src = (rex_r, rex_b, modrm, opcode')
+revRegs :: ReverseBit -> Word8 -> RegCode -> RegCode -> (Field REX_R, Field REX_B, ModRM, Word8)
+revRegs rev opcode dst src = (rex_r, rex_b, modrm, opcode')
   where
     modrm        = modRM_RegReg reg rm
     (rrm,rreg)   = case rev of
                       ReverseBit0 -> (dst,src)
                       ReverseBit1 -> (src,dst)
-    (rex_b, rm)  = encodeFieldRM_reg rrm
+    (rex_b, rm)  = regRM rrm
     (rex_r, reg) = encodeFieldReg_reg rreg
     opcode'      = case rev of
                       ReverseBit0 -> opcode
@@ -650,13 +690,13 @@ reversable_RegRM rev opcode dst src = (rex_r, rex_b, modrm, opcode')
 
 data Segment = CS | DS | ES | FS | GS | SS
 
-putSegmentOverrideMaybe :: Output m => Maybe Segment -> m ()
-putSegmentOverrideMaybe = \case
+segMaybe :: Output m => Maybe Segment -> m ()
+segMaybe = \case
   Nothing -> pure ()
-  Just s  -> putSegmentOverride s
+  Just s  -> seg s
 
-putSegmentOverride :: Output m => Segment -> m ()
-putSegmentOverride = \case
+seg :: Output m => Segment -> m ()
+seg = \case
   CS -> putW8 0x2E
   DS -> putW8 0x3E
   ES -> putW8 0x26
@@ -668,13 +708,13 @@ data AddrSize
   = Addr64 -- ^ 64-bit address size (default)
   | Addr32 -- ^ 32-bit address size
 
-putAddrSizeOverrideMaybe :: Output m => Maybe AddrSize -> m ()
-putAddrSizeOverrideMaybe = \case
+addrSizeMaybe :: Output m => Maybe AddrSize -> m ()
+addrSizeMaybe = \case
   Nothing -> pure ()
-  Just s  -> putAddrSizeOverride s
+  Just s  -> addrSize s
 
-putAddrSizeOverride :: Output m => AddrSize -> m ()
-putAddrSizeOverride = \case
+addrSize :: Output m => AddrSize -> m ()
+addrSize = \case
   Addr64 -> pure ()
   Addr32 -> putW8 0x67
 
@@ -719,7 +759,7 @@ toScale x = case x .&. 0b11000000 of
   0b10000000 -> Scale4
   _          -> Scale8
 
-computeAddrFields
+addrFields
   :: Addr
   -> ( Maybe Segment
      , Maybe AddrSize
@@ -730,12 +770,12 @@ computeAddrFields
      , Field REX_X
      , Field REX_B
      )
-computeAddrFields (Addr ea mseg msize)
-  = (mseg, msize, m_mod, m_rm, sib, disp, rex_x, rex_b)
+addrFields (Addr ea mseg msize)
+  = (mseg, msize, m_mod, m_rm, msib, disp, rex_x, rex_b)
   where
     -- we don't remove redundant segment override here, the responsibility is
     -- left to the caller to canonicalize the address.
-    (m_mod, m_rm, sib, disp, rex_x, rex_b) = computeAddr64Fields ea
+    (m_mod, m_rm, msib, disp, rex_x, rex_b) = computeAddr64Fields ea
 
 computeAddr64Fields
   :: Addr64
@@ -751,11 +791,11 @@ computeAddr64Fields = \case
 
   -- RIP+disp32 addressing
   -- (does it support segment override?)
-  RIPRelative disp32
+  RIPRelative d32
     -> ( MemMod00
        , FieldRM_mem 0b101
        , Nothing
-       , SomeDisp32 disp32
+       , SomeDisp32 d32
        , Default
        , Default
        )
@@ -909,13 +949,13 @@ extractSIB (RawSIB w) =
   , Word3 (w .&. 0b111)
   )
 
-putSIBMaybe :: Output m => Maybe SIB -> m ()
-putSIBMaybe = \case
+sibMaybe :: Output m => Maybe SIB -> m ()
+sibMaybe = \case
   Nothing -> pure ()
-  Just v  -> putSIB v
+  Just v  -> sib v
 
-putSIB :: Output m => SIB -> m ()
-putSIB (RawSIB w) = putW8 w
+sib :: Output m => SIB -> m ()
+sib (RawSIB w) = putW8 w
 
 -- ========================================
 -- Instructions
@@ -1033,162 +1073,155 @@ data ADC_m8_i8 = ADC_m8_i8
 --------------------------
 
 instance Put ADC_AL_i8 where
-  -- return offset of the imm8 value
   type PutResult ADC_AL_i8 = LocImm8
 
   put (ADC_AL_i8 v) = do
-    putOpcode 0x14
-    putImm8 v
+    oc 0x14
+    i8 v
 
 instance Put ADC_AX_i16 where
-  -- return offset of the imm16 value
   type PutResult ADC_AX_i16 = LocImm16
 
   put (ADC_AX_i16 v) = do
-    setOperandSize16
-    putOpcode 0x15
-    putImm16 v
+    os16
+    oc 0x15
+    i16 v
 
 instance Put ADC_EAX_i32 where
-  -- return offset of the imm32 value
   type PutResult ADC_EAX_i32 = LocImm32
 
   put (ADC_EAX_i32 v) = do
-    setOperandSize32
-    putOpcode 0x15
-    putImm32 v
+    os32
+    oc 0x15
+    i32 v
 
 instance Put ADC_RAX_i32 where
-  -- return offset of the imm32 value
-  type PutResult ADC_RAX_i32 = LocImm32SE
+  type PutResult ADC_RAX_i32 = LocImm32sx
 
   put (ADC_RAX_i32 v) = do
-    putRexW
-    putOpcode 0x15
-    putImm32SE v
+    rexW
+    oc 0x15
+    i32sx v
 
 instance Put ADC_r8_i8 where
-  -- return offset of the imm8 value
   type PutResult ADC_r8_i8 = LocImm8
 
-  put (ADC_r8_i8 r v) = do
-    let (rex_b, r_lsb) = encodeFieldRM_reg r
-    putRexWRXB Default Default Default rex_b
-    putOpcodeExt_Reg 0x80 2 r_lsb
-    putImm8 v
+  put (ADC_r8_i8 (regRM -> (b,r)) v) = do
+    rex W R X b
+    oc 0x80
+    ocxReg 2 r
+    i8 v
 
 instance Put ADC_r16_i16 where
-  -- return offset of the imm16 value
   type PutResult ADC_r16_i16 = LocImm16
 
-  put (ADC_r16_i16 r v) = do
-    setOperandSize16
-    let (rex_b, r_lsb) = encodeFieldRM_reg r
-    putRexWRXB Default Default Default rex_b
-    putOpcodeExt_Reg 0x81 2 r_lsb
-    putImm16 v
+  put (ADC_r16_i16 (regRM -> (b,r)) v) = do
+    os16
+    rex W R X b
+    oc 0x81
+    ocxReg 2 r
+    i16 v
 
 instance Put ADC_r32_i32 where
-  -- return offset of the imm32 value
   type PutResult ADC_r32_i32 = LocImm32
 
-  put (ADC_r32_i32 r v) = do
-    setOperandSize32
-    let (rex_b, r_lsb) = encodeFieldRM_reg r
-    putRexWRXB Default Default Default rex_b
-    putOpcodeExt_Reg 0x81 2 r_lsb
-    putImm32 v
+  put (ADC_r32_i32 (regRM -> (b,r)) v) = do
+    os32
+    rex W R X b
+    oc 0x81
+    ocxReg 2 r
+    i32 v
 
 instance Put ADC_r64_i32 where
-  type PutResult ADC_r64_i32 = LocImm32SE
+  type PutResult ADC_r64_i32 = LocImm32sx
 
-  put (ADC_r64_i32 r v) = do
-    let (rex_b, r_lsb) = encodeFieldRM_reg r
-    putRexWRXB (SetTo REX_W_1) Default Default rex_b
-    putOpcodeExt_Reg 0x81 2 r_lsb
-    putImm32SE v
+  put (ADC_r64_i32 (regRM -> (b,r)) v) = do
+    rex W1 R X b
+    oc 0x81
+    ocxReg 2 r
+    i32sx v
 
 instance Put ADC_r16_i8 where
   type PutResult ADC_r16_i8 = LocImm8SE
 
-  put (ADC_r16_i8 r v) = do
-    setOperandSize16
-    let (rex_b, r_lsb) = encodeFieldRM_reg r
-    putRexWRXB Default Default Default rex_b
-    putOpcodeExt_Reg 0x83 2 r_lsb
-    putImm8SE v
+  put (ADC_r16_i8 (regRM -> (b,r)) v) = do
+    os16
+    rex W R X b
+    oc 0x83
+    ocxReg 2 r
+    i8sx v
 
 instance Put ADC_r32_i8 where
   type PutResult ADC_r32_i8 = LocImm8SE
 
-  put (ADC_r32_i8 r v) = do
-    setOperandSize32
-    let (rex_b, r_lsb) = encodeFieldRM_reg r
-    putRexWRXB Default Default Default rex_b
-    putOpcodeExt_Reg 0x83 2 r_lsb
-    putImm8SE v
+  put (ADC_r32_i8 (regRM -> (b,r)) v) = do
+    os32
+    rex W R X b
+    oc 0x83
+    ocxReg 2 r
+    i8sx v
 
 instance Put ADC_r64_i8 where
   type PutResult ADC_r64_i8 = LocImm8SE
 
-  put (ADC_r64_i8 r v) = do
-    let (rex_b, r_lsb) = encodeFieldRM_reg r
-    putRexWRXB (SetTo REX_W_1) Default Default rex_b
-    putOpcodeExt_Reg 0x83 2 r_lsb
-    putImm8SE v
+  put (ADC_r64_i8 (regRM -> (b,r)) v) = do
+    rex W1 R X b
+    oc 0x83
+    ocxReg 2 r
+    i8sx v
 
 instance Put ADC_r8_r8 where
   type PutResult ADC_r8_r8 = ()
 
   put (ADC_r8_r8 dst src rev) = do
-    let (rex_r, rex_b, modrm, opcode) = reversable_RegRM rev 0x10 dst src
-    putRexWRXB Default rex_r Default rex_b
-    putOpcode opcode
+    let (r, b, modrm, o) = revRegs rev 0x10 dst src
+    rex W r X b
+    oc o
     putModRM modrm
 
 instance Put ADC_r16_r16 where
   type PutResult ADC_r16_r16 = ()
 
   put (ADC_r16_r16 dst src rev) = do
-    let (rex_r, rex_b, modrm, opcode) = reversable_RegRM rev 0x11 dst src
-    setOperandSize16
-    putRexWRXB Default rex_r Default rex_b
-    putOpcode opcode
+    let (r, b, modrm, o) = revRegs rev 0x11 dst src
+    os16
+    rex W r X b
+    oc o
     putModRM modrm
 
 instance Put ADC_r32_r32 where
   type PutResult ADC_r32_r32 = ()
 
   put (ADC_r32_r32 dst src rev) = do
-    let (rex_r, rex_b, modrm, opcode) = reversable_RegRM rev 0x11 dst src
-    setOperandSize32
-    putRexWRXB Default rex_r Default rex_b
-    putOpcode opcode
+    let (r, b, modrm, o) = revRegs rev 0x11 dst src
+    os32
+    rex W r X b
+    oc o
     putModRM modrm
 
 instance Put ADC_r64_r64 where
   type PutResult ADC_r64_r64 = ()
 
   put (ADC_r64_r64 dst src rev) = do
-    let (rex_r, rex_b, modrm, opcode) = reversable_RegRM rev 0x11 dst src
-    putRexWRXB (SetTo REX_W_1) rex_r Default rex_b
-    putOpcode opcode
+    let (r, b, modrm, o) = revRegs rev 0x11 dst src
+    rex W1 r X b
+    oc o
     putModRM modrm
 
 instance Put ADC_m8_i8 where
   type PutResult ADC_m8_i8 = (LocDispMaybe, LocImm8)
 
   put (ADC_m8_i8 lock m v) = do
-    putLock lock
-    let (mseg, masize, m_mod, m_rm, sib, disp, rex_x, rex_b) = computeAddrFields m
-    putSegmentOverrideMaybe mseg
-    putAddrSizeOverrideMaybe masize
-    putRexWRXB Default Default rex_x rex_b
-    putOpcode 0x80
-    putModRM (modRM_OpcodeMem (FieldReg_opcode 2) m_mod m_rm)
-    putSIBMaybe sib
-    loc_disp <- putDispMaybe disp
-    loc_imm <- putImm8 v
+    let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+    lockMaybe lock
+    segMaybe mseg
+    addrSizeMaybe masize
+    rex W R x b
+    oc 0x80
+    ocxMem 2 m_mod m_rm
+    sibMaybe msib
+    loc_disp <- dispMaybe disp
+    loc_imm <- i8 v
     pure (loc_disp, loc_imm)
 
 -- > runCodeGen $ putADC_AL_imm8 (V 15) >> putADC_AL_imm8 (M "Imm8 marker") >> putADC_AL_imm8 (V 27) >> putADC_AX_imm16 (V 0x0102)
