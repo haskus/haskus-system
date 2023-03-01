@@ -34,6 +34,7 @@ library
     Haskus.Arch.X86_64.Linux.SyscallTable
     Haskus.Arch.X86_64.Linux.Syscalls
 
+    Haskus.Arch.X86_64.ISA.Asm
     Haskus.Arch.X86_64.ISA.Operand
     Haskus.Arch.X86_64.ISA.Output
     Haskus.Arch.X86_64.ISA.Ops
@@ -174,6 +175,13 @@ library
     src/lib/Haskus/Arch/X86_64/cpuid.c
 
   cc-options: -O3
+
+  default-extensions:
+         LambdaCase
+      ,  BlockArguments
+      ,  MultiWayIf
+      ,  BinaryLiterals
+      ,  DerivingStrategies
 
   build-depends:       
          base                      >= 4.9 && <5.0
