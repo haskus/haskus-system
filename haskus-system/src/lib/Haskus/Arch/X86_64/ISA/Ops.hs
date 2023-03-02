@@ -33,12 +33,11 @@ data Lock
 data CGState = CGState
   { cg_bytes   :: ![Word8]
   , cg_pos     :: !Location
-  , cg_op_size :: !DefaultOperandSize
   }
   deriving (Show)
 
 initCGState :: CGState
-initCGState = CGState [] 0 DefaultOperandSize32
+initCGState = CGState [] 0
 
 
 newtype CodeGen a = CodeGen (S.State CGState a)
@@ -50,9 +49,6 @@ instance Output CodeGen where
                   , cg_pos   = cg_pos s + 1
                   }
   getLoc = CodeGen (S.gets cg_pos)
-
-instance Asm CodeGen where
-  getOperandSize = CodeGen (S.gets cg_op_size)
 
 runCodeGen :: CodeGen a -> (a, CGState)
 runCodeGen (CodeGen m) = second fix_state $ S.runState m initCGState
@@ -120,7 +116,7 @@ dispMaybe = \case
   SomeDisp32 d -> SomeLocDisp32 <$> disp32 d
 
 -- | Enable 64-bit operand size (REX.W)
-rexW :: Asm m => m ()
+rexW :: Output m => m ()
 rexW = putW8 0b01001000
 
 data REX_B
@@ -183,7 +179,7 @@ pattern B = Default
 --
 -- Throw an exception if constraints can't be fulfilled, i.e. some field
 -- requires the REX prefix to be absent and another requires it to be present.
-rex :: Asm m => Field REX_W -> Field REX_R -> Field REX_X -> Field REX_B -> m ()
+rex :: Output m => Field REX_W -> Field REX_R -> Field REX_X -> Field REX_B -> m ()
 {-# INLINE rex #-} -- inline as it often simplifies
 rex w r x b = case wrxb of
     Absent  -> pure ()
@@ -225,34 +221,34 @@ fromREX_B = \case
   REX_B_0 -> 0b0000
   REX_B_1 -> 0b0001
 
-oc :: Asm m => Word8 -> m ()
+oc :: Output m => Word8 -> m ()
 oc = putW8
 
-i8 :: Asm m => Word8 -> m LocImm8
+i8 :: Output m => Word8 -> m LocImm8
 i8 v = do
   loc <- LocImm8 <$> getLoc
   putW8 v
   pure loc
 
-i16 :: Asm m => Word16 -> m LocImm16
+i16 :: Output m => Word16 -> m LocImm16
 i16 v = do
   loc <- LocImm16 <$> getLoc
   putW16 v
   pure loc
 
-i32 :: Asm m => Word32 -> m LocImm32
+i32 :: Output m => Word32 -> m LocImm32
 i32 v = do
   loc <- LocImm32 <$> getLoc
   putW32 v
   pure loc
 
-i8sx :: Asm m => Word8 -> m LocImm8SE
+i8sx :: Output m => Word8 -> m LocImm8SE
 i8sx v = do
   loc <- LocImm8SE <$> getLoc
   putW8 v
   pure loc
 
-i32sx :: Asm m => Word32 -> m LocImm32sx
+i32sx :: Output m => Word32 -> m LocImm32sx
 i32sx v = do
   loc <- LocImm32sx <$> getLoc
   putW32 v
@@ -332,7 +328,7 @@ extractModRM (RawModRM w) =
   , Word3 (w .&. 0b111)
   )
 
-putModRM :: Asm m => ModRM -> m ()
+putModRM :: Output m => ModRM -> m ()
 putModRM (RawModRM w) = putW8 w
 
 -- | Assert that a Word8 is on 3 bits
@@ -379,13 +375,13 @@ modRM_OpcodeReg opcode reg = ModRM Mod11 (unFieldReg_opcode opcode) (unFieldRM_r
 -- | Put opcode extension and register as arguments
 --
 -- Opcode extension and register are stored in ModRM.{reg,rm} respectively.
-ocxReg :: Asm m => Word3 -> FieldRM_reg -> m ()
+ocxReg :: Output m => Word3 -> FieldRM_reg -> m ()
 ocxReg ext reg = putModRM (modRM_OpcodeReg (FieldReg_opcode ext) reg)
 
 -- | Put opcode extension and address as arguments
 --
 -- Opcode extension and address are stored in ModRM.{reg,rm} respectively.
-ocxMem :: Asm m => Word3 -> MemMod -> FieldRM_mem -> m ()
+ocxMem :: Output m => Word3 -> MemMod -> FieldRM_mem -> m ()
 ocxMem ext md rm = putModRM (modRM_OpcodeMem (FieldReg_opcode ext) md rm)
 
 modRM_RegReg :: FieldReg_reg -> FieldRM_reg -> ModRM
@@ -799,7 +795,7 @@ sib (RawSIB w) = putW8 w
 
 class Put a where
   type PutResult a
-  put :: Asm m => a -> m (PutResult a)
+  put :: Output m => a -> m (PutResult a)
 
 instance Put Word8  where
   type PutResult Word8 = ()
@@ -841,10 +837,10 @@ instance Put Int64  where
 newtype ADC_AL_i8 = ADC_AL_i8 Word8
 
 -- | Add imm16 to AX + CF
-newtype ADC_AX_i16 = ADC_AX_i16 Word16
+data ADC_AX_i16 = ADC_AX_i16 !DefaultOperandSize !Word16
 
 -- | Add imm32 to EAX + CF
-newtype ADC_EAX_i32 = ADC_EAX_i32 Word32
+data ADC_EAX_i32 = ADC_EAX_i32 !DefaultOperandSize !Word32
 
 -- | Add sign-extended imm32 to RAX + CF
 newtype ADC_RAX_i32 = ADC_RAX_i32 Word32
@@ -853,19 +849,19 @@ newtype ADC_RAX_i32 = ADC_RAX_i32 Word32
 data ADC_r8_i8 = ADC_r8_i8 !RegCode !Word8
 
 -- | Add imm16 to reg16 + CF
-data ADC_r16_i16 = ADC_r16_i16 !RegCode !Word16
+data ADC_r16_i16 = ADC_r16_i16 !DefaultOperandSize !RegCode !Word16
 
 -- | Add imm32 to reg32 + CF
-data ADC_r32_i32 = ADC_r32_i32 !RegCode !Word32
+data ADC_r32_i32 = ADC_r32_i32 !DefaultOperandSize !RegCode !Word32
 
 -- | Add sign-extended imm32 to reg64 + CF
 data ADC_r64_i32 = ADC_r64_i32 !RegCode !Word32
 
 -- | Add sign-extended imm8 to reg16 + CF
-data ADC_r16_i8 = ADC_r16_i8 !RegCode !Word8
+data ADC_r16_i8 = ADC_r16_i8 !DefaultOperandSize !RegCode !Word8
 
 -- | Add sign-extended imm8 to reg32 + CF
-data ADC_r32_i8 = ADC_r32_i8 !RegCode !Word8
+data ADC_r32_i8 = ADC_r32_i8 !DefaultOperandSize !RegCode !Word8
 
 -- | Add sign-extended imm8 to reg64 + CF
 data ADC_r64_i8 = ADC_r64_i8 !RegCode !Word8
@@ -879,14 +875,16 @@ data ADC_r8_r8 = ADC_r8_r8
 
 -- | Add reg16 to reg16 + CF
 data ADC_r16_r16 = ADC_r16_r16
-  { adc_r16_r16_dst :: !RegCode
+  { adc_r16_r16_dos :: !DefaultOperandSize
+  , adc_r16_r16_dst :: !RegCode
   , adc_r16_r16_src :: !RegCode
   , adc_r16_r16_rev :: !ReverseBit
   }
 
 -- | Add reg32 to reg32 + CF
 data ADC_r32_r32 = ADC_r32_r32
-  { adc_r32_r32_dst :: !RegCode
+  { adc_r32_r32_dos :: !DefaultOperandSize
+  , adc_r32_r32_dst :: !RegCode
   , adc_r32_r32_src :: !RegCode
   , adc_r32_r32_rev :: !ReverseBit
   }
@@ -907,14 +905,16 @@ data ADC_m8_i8 = ADC_m8_i8
 
 -- | Add imm16 to mem16 + CF
 data ADC_m16_i16 = ADC_m16_i16
-  { adc_m16_i16_lock :: !Lock
+  { adc_m16_i16_dos  :: !DefaultOperandSize
+  , adc_m16_i16_lock :: !Lock
   , adc_m16_i16_dst  :: !Addr
   , adc_m16_i16_src  :: !Word16
   }
 
 -- | Add imm32 to mem32 + CF
 data ADC_m32_i32 = ADC_m32_i32
-  { adc_m32_i32_lock :: !Lock
+  { adc_m32_i32_dos  :: !DefaultOperandSize
+  , adc_m32_i32_lock :: !Lock
   , adc_m32_i32_dst  :: !Addr
   , adc_m32_i32_src  :: !Word32
   }
@@ -939,16 +939,16 @@ instance Put ADC_AL_i8 where
 instance Put ADC_AX_i16 where
   type PutResult ADC_AX_i16 = LocImm16
 
-  put (ADC_AX_i16 v) = do
-    os16
+  put (ADC_AX_i16 dos v) = do
+    os16 dos
     oc 0x15
     i16 v
 
 instance Put ADC_EAX_i32 where
   type PutResult ADC_EAX_i32 = LocImm32
 
-  put (ADC_EAX_i32 v) = do
-    os32
+  put (ADC_EAX_i32 dos v) = do
+    os32 dos
     oc 0x15
     i32 v
 
@@ -972,8 +972,8 @@ instance Put ADC_r8_i8 where
 instance Put ADC_r16_i16 where
   type PutResult ADC_r16_i16 = LocImm16
 
-  put (ADC_r16_i16 (regRM -> (b,r)) v) = do
-    os16
+  put (ADC_r16_i16 dos (regRM -> (b,r)) v) = do
+    os16 dos
     rex W R X b
     oc 0x81
     ocxReg 2 r
@@ -982,8 +982,8 @@ instance Put ADC_r16_i16 where
 instance Put ADC_r32_i32 where
   type PutResult ADC_r32_i32 = LocImm32
 
-  put (ADC_r32_i32 (regRM -> (b,r)) v) = do
-    os32
+  put (ADC_r32_i32 dos (regRM -> (b,r)) v) = do
+    os32 dos
     rex W R X b
     oc 0x81
     ocxReg 2 r
@@ -1001,8 +1001,8 @@ instance Put ADC_r64_i32 where
 instance Put ADC_r16_i8 where
   type PutResult ADC_r16_i8 = LocImm8SE
 
-  put (ADC_r16_i8 (regRM -> (b,r)) v) = do
-    os16
+  put (ADC_r16_i8 dos (regRM -> (b,r)) v) = do
+    os16 dos
     rex W R X b
     oc 0x83
     ocxReg 2 r
@@ -1011,8 +1011,8 @@ instance Put ADC_r16_i8 where
 instance Put ADC_r32_i8 where
   type PutResult ADC_r32_i8 = LocImm8SE
 
-  put (ADC_r32_i8 (regRM -> (b,r)) v) = do
-    os32
+  put (ADC_r32_i8 dos (regRM -> (b,r)) v) = do
+    os32 dos
     rex W R X b
     oc 0x83
     ocxReg 2 r
@@ -1039,9 +1039,9 @@ instance Put ADC_r8_r8 where
 instance Put ADC_r16_r16 where
   type PutResult ADC_r16_r16 = ()
 
-  put (ADC_r16_r16 dst src rev) = do
+  put (ADC_r16_r16 dos dst src rev) = do
     let (r, b, modrm, o) = revRegs rev 0x11 dst src
-    os16
+    os16 dos
     rex W r X b
     oc o
     putModRM modrm
@@ -1049,9 +1049,9 @@ instance Put ADC_r16_r16 where
 instance Put ADC_r32_r32 where
   type PutResult ADC_r32_r32 = ()
 
-  put (ADC_r32_r32 dst src rev) = do
+  put (ADC_r32_r32 dos dst src rev) = do
     let (r, b, modrm, o) = revRegs rev 0x11 dst src
-    os32
+    os32 dos
     rex W r X b
     oc o
     putModRM modrm
@@ -1084,12 +1084,12 @@ instance Put ADC_m8_i8 where
 instance Put ADC_m16_i16 where
   type PutResult ADC_m16_i16 = (LocDispMaybe, LocImm16)
 
-  put (ADC_m16_i16 lock m v) = do
+  put (ADC_m16_i16 dos lock m v) = do
     let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
     lockMaybe lock
     segMaybe mseg
     addrSizeMaybe masize
-    os16
+    os16 dos
     rex W R x b
     oc 0x81
     ocxMem 2 m_mod m_rm
@@ -1101,12 +1101,12 @@ instance Put ADC_m16_i16 where
 instance Put ADC_m32_i32 where
   type PutResult ADC_m32_i32 = (LocDispMaybe, LocImm32)
 
-  put (ADC_m32_i32 lock m v) = do
+  put (ADC_m32_i32 dos lock m v) = do
     let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
     lockMaybe lock
     segMaybe mseg
     addrSizeMaybe masize
-    os32
+    os32 dos
     rex W R x b
     oc 0x81
     ocxMem 2 m_mod m_rm
