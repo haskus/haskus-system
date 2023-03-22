@@ -37,6 +37,7 @@ library
     Haskus.Arch.X86_64.ISA.Asm
     Haskus.Arch.X86_64.ISA.Operand
     Haskus.Arch.X86_64.ISA.Output
+    Haskus.Arch.X86_64.ISA.Put
     Haskus.Arch.X86_64.ISA.Ops
     Haskus.Arch.X86_64.ISA.Memory
     Haskus.Arch.X86_64.ISA.Immediate
@@ -49,6 +50,7 @@ library
     Haskus.Arch.X86_64.ISA.Decoder
     Haskus.Arch.X86_64.ISA.Insns
     Haskus.Arch.X86_64.ISA.Insn
+    Haskus.Arch.X86_64.ISA.Insn.ADC
     Haskus.Arch.X86_64.ISA.Encoding
     Haskus.Arch.X86_64.ISA.Encoder
     Haskus.Arch.X86_64.Disassembler
@@ -182,6 +184,8 @@ library
       ,  MultiWayIf
       ,  BinaryLiterals
       ,  DerivingStrategies
+      ,  ViewPatterns
+      ,  TypeFamilies
 
   build-depends:       
          base                      >= 4.9 && <5.0
