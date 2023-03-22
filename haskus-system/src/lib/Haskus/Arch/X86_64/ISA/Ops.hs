@@ -69,6 +69,10 @@ module Haskus.Arch.X86_64.ISA.Ops
   , lockMaybe
   , segMaybe
   -- Instruction encoding schemes
+  , gen_al_i8
+  , gen_ax_i16
+  , gen_eax_i32
+  , gen_rax_i32sx
   , gen_r8_i8
   , gen_r16_i16
   , gen_r32_i32
@@ -847,6 +851,33 @@ sibMaybe = \case
 
 sib :: Output m => SIB -> m ()
 sib (RawSIB w) = putW8 w
+
+gen_al_i8 :: Output m => Word8 -> Word8 -> m LocImm8
+gen_al_i8 opc v = do
+  beginInsn
+  oc opc
+  i8 v
+
+gen_ax_i16 :: Output m => Word8 -> DefaultOperandSize -> Word16 -> m LocImm16
+gen_ax_i16 opc dos v = do
+  beginInsn
+  os16 dos
+  oc opc
+  i16 v
+
+gen_eax_i32 :: Output m => Word8 -> DefaultOperandSize -> Word32 -> m LocImm32
+gen_eax_i32 opc dos v = do
+  beginInsn
+  os32 dos
+  oc opc
+  i32 v
+
+gen_rax_i32sx :: Output m => Word8 -> Word32 -> m LocImm32sx
+gen_rax_i32sx opc v = do
+  beginInsn
+  rexW
+  oc opc
+  i32sx v
 
 gen_r8_i8 :: Output m => Word8 -> Word3 -> RegCode -> Word8 -> m LocImm8
 gen_r8_i8 opc opx (regRM -> (b,r)) v = do

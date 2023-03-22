@@ -144,39 +144,20 @@ data ADC_m64_i32sx = ADC_m64_i32sx
 --------------------------
 
 instance Put ADC_AL_i8 where
-  type PutResult ADC_AL_i8 = LocImm8
-
-  put (ADC_AL_i8 v) = do
-    beginInsn
-    oc 0x14
-    i8 v
+  type PutResult ADC_AL_i8    = LocImm8
+  put (ADC_AL_i8 v)           = gen_al_i8 0x14 v
 
 instance Put ADC_AX_i16 where
-  type PutResult ADC_AX_i16 = LocImm16
-
-  put (ADC_AX_i16 dos v) = do
-    beginInsn
-    os16 dos
-    oc 0x15
-    i16 v
+  type PutResult ADC_AX_i16   = LocImm16
+  put (ADC_AX_i16 dos v)      = gen_ax_i16 0x15 dos v
 
 instance Put ADC_EAX_i32 where
-  type PutResult ADC_EAX_i32 = LocImm32
-
-  put (ADC_EAX_i32 dos v) = do
-    beginInsn
-    os32 dos
-    oc 0x15
-    i32 v
+  type PutResult ADC_EAX_i32  = LocImm32
+  put (ADC_EAX_i32 dos v)     = gen_eax_i32 0x15 dos v
 
 instance Put ADC_RAX_i32 where
-  type PutResult ADC_RAX_i32 = LocImm32sx
-
-  put (ADC_RAX_i32 v) = do
-    beginInsn
-    rexW
-    oc 0x15
-    i32sx v
+  type PutResult ADC_RAX_i32  = LocImm32sx
+  put (ADC_RAX_i32 v)         = gen_rax_i32sx 0x15 v
 
 instance Put ADC_r8_i8 where
   type PutResult ADC_r8_i8    = LocImm8
