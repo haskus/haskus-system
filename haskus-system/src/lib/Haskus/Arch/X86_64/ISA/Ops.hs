@@ -68,6 +68,22 @@ module Haskus.Arch.X86_64.ISA.Ops
   , dispMaybe
   , lockMaybe
   , segMaybe
+  -- Instruction encoding schemes
+  , gen_r8_i8
+  , gen_r16_i16
+  , gen_r32_i32
+  , gen_r64_i32sx
+  , gen_r16_i8sx
+  , gen_r32_i8sx
+  , gen_r64_i8sx
+  , gen_r8_r8_rev
+  , gen_r16_r16_rev
+  , gen_r32_r32_rev
+  , gen_r64_r64_rev
+  , gen_m8_i8
+  , gen_m16_i16
+  , gen_m32_i32
+  , gen_m64_i32sx
   , module Haskus.Arch.X86_64.ISA.Put
   , module Haskus.Arch.X86_64.ISA.Output
   , module Haskus.Arch.X86_64.ISA.Asm
@@ -831,3 +847,159 @@ sibMaybe = \case
 
 sib :: Output m => SIB -> m ()
 sib (RawSIB w) = putW8 w
+
+gen_r8_i8 :: Output m => Word8 -> Word3 -> RegCode -> Word8 -> m LocImm8
+gen_r8_i8 opc opx (regRM -> (b,r)) v = do
+  beginInsn
+  rex W R X b
+  oc opc
+  ocxReg opx r
+  i8 v
+
+gen_r16_i16 :: Output m => Word8 -> Word3 -> DefaultOperandSize -> RegCode -> Word16 -> m LocImm16
+gen_r16_i16 opc opx dos (regRM -> (b,r)) v = do
+  beginInsn
+  os16 dos
+  rex W R X b
+  oc opc
+  ocxReg opx r
+  i16 v
+
+gen_r32_i32 :: Output m => Word8 -> Word3 -> DefaultOperandSize -> RegCode -> Word32 -> m LocImm32
+gen_r32_i32 opc opx dos (regRM -> (b,r)) v = do
+  beginInsn
+  os32 dos
+  rex W R X b
+  oc opc
+  ocxReg opx r
+  i32 v
+
+gen_r64_i32sx :: Output m => Word8 -> Word3 -> RegCode -> Word32 -> m LocImm32sx
+gen_r64_i32sx opc opx (regRM -> (b,r)) v = do
+  beginInsn
+  rex W1 R X b
+  oc opc
+  ocxReg opx r
+  i32sx v
+
+gen_r16_i8sx :: Output m => Word8 -> Word3 -> DefaultOperandSize -> RegCode -> Word8 -> m LocImm8sx
+gen_r16_i8sx opc opx dos (regRM -> (b,r)) v = do
+  beginInsn
+  os16 dos
+  rex W R X b
+  oc opc
+  ocxReg opx r
+  i8sx v
+
+gen_r32_i8sx :: Output m => Word8 -> Word3 -> DefaultOperandSize -> RegCode -> Word8 -> m LocImm8sx
+gen_r32_i8sx opc opx dos (regRM -> (b,r)) v = do
+  beginInsn
+  os32 dos
+  rex W R X b
+  oc opc
+  ocxReg opx r
+  i8sx v
+
+gen_r64_i8sx :: Output m => Word8 -> Word3 -> RegCode -> Word8 -> m LocImm8sx
+gen_r64_i8sx opc opx (regRM -> (b,r)) v = do
+  beginInsn
+  rex W1 R X b
+  oc opc
+  ocxReg opx r
+  i8sx v
+
+gen_r8_r8_rev :: Output m => Word8 -> RegCode -> RegCode -> ReverseBit -> m ()
+gen_r8_r8_rev opc dst src rev = do
+  beginInsn
+  let (r, b, modrm, o) = revRegs rev opc dst src
+  rex W r X b
+  oc o
+  putModRM modrm
+
+gen_r16_r16_rev :: Output m => Word8 -> DefaultOperandSize -> RegCode -> RegCode -> ReverseBit -> m ()
+gen_r16_r16_rev opc dos dst src rev = do
+  beginInsn
+  let (r, b, modrm, o) = revRegs rev opc dst src
+  os16 dos
+  rex W r X b
+  oc o
+  putModRM modrm
+
+gen_r32_r32_rev :: Output m => Word8 -> DefaultOperandSize -> RegCode -> RegCode -> ReverseBit -> m ()
+gen_r32_r32_rev opc dos dst src rev = do
+  beginInsn
+  let (r, b, modrm, o) = revRegs rev opc dst src
+  os32 dos
+  rex W r X b
+  oc o
+  putModRM modrm
+
+gen_r64_r64_rev :: Output m => Word8 -> RegCode -> RegCode -> ReverseBit -> m ()
+gen_r64_r64_rev opc dst src rev = do
+  beginInsn
+  let (r, b, modrm, o) = revRegs rev opc dst src
+  rex W1 r X b
+  oc o
+  putModRM modrm
+
+gen_m8_i8 :: Output m => Word8 -> Word3 -> Lock -> Addr -> Word8 -> m (LocDispMaybe, LocImm8)
+gen_m8_i8 opc opx lock m v = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  rex W R x b
+  oc opc
+  ocxMem opx m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 1 disp
+  loc_imm <- i8 v
+  pure (loc_disp, loc_imm)
+
+gen_m16_i16 :: Output m => Word8 -> Word3 -> DefaultOperandSize -> Lock -> Addr -> Word16 -> m (LocDispMaybe, LocImm16)
+gen_m16_i16 opc opx dos lock m v = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  os16 dos
+  rex W R x b
+  oc opc
+  ocxMem opx m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 2 disp
+  loc_imm <- i16 v
+  pure (loc_disp, loc_imm)
+
+gen_m32_i32 :: Output m => Word8 -> Word3 -> DefaultOperandSize -> Lock -> Addr -> Word32 -> m (LocDispMaybe, LocImm32)
+gen_m32_i32 opc opx dos lock m v = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  os32 dos
+  rex W R x b
+  oc opc
+  ocxMem opx m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 4 disp
+  loc_imm <- i32 v
+  pure (loc_disp, loc_imm)
+
+gen_m64_i32sx :: Output m => Word8 -> Word3 -> Lock -> Addr -> Word32 -> m (LocDispMaybe, LocImm32sx)
+gen_m64_i32sx opc opx lock m v = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  rex W1 R x b
+  oc opc
+  ocxMem opx m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 4 disp
+  loc_imm <- i32sx v
+  pure (loc_disp, loc_imm)
