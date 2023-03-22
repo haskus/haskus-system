@@ -51,6 +51,7 @@ library
     Haskus.Arch.X86_64.ISA.Insns
     Haskus.Arch.X86_64.ISA.Insn
     Haskus.Arch.X86_64.ISA.Insn.ADC
+    Haskus.Arch.X86_64.ISA.Example
     Haskus.Arch.X86_64.ISA.Encoding
     Haskus.Arch.X86_64.ISA.Encoder
     Haskus.Arch.X86_64.Disassembler
@@ -219,6 +220,7 @@ library
       ,  colour                    >= 2.3
       ,  file-embed                >= 0.0.10
       ,  extra                     >= 1.4
+      ,  process
 
   build-tools:
   ghc-options:          -Wall -O

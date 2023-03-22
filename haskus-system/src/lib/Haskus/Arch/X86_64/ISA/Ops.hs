@@ -1,13 +1,10 @@
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -15,6 +12,8 @@
 module Haskus.Arch.X86_64.ISA.Ops
   ( Lock (..)
   , Addr (..)
+  , Addr64 (..)
+  , BSID (..)
   , LocImm8 (..)
   , LocImm8sx (..)
   , LocImm16 (..)
@@ -27,6 +26,11 @@ module Haskus.Arch.X86_64.ISA.Ops
   , LocDisp32 (..)
   , ReverseBit (..)
   , RegCode (..)
+  , pattern RegCode
+  , pattern RAX
+  , pattern RBX
+  , pattern RCX
+  , pattern RDX
   , oc
   , i8
   , i8sx
@@ -70,8 +74,6 @@ where
 import Data.Word
 import Data.Int
 import Data.Bits
-import qualified Control.Monad.State as S
-import Data.Bifunctor
 
 import Haskus.Arch.X86_64.ISA.Output
 import Haskus.Arch.X86_64.ISA.Put
@@ -81,47 +83,20 @@ data Lock
   = Lock   -- ^ Lock memory access during the operation
   | NoLock -- ^ Don't lock memory
 
-data CGState = CGState
-  { cg_bytes   :: ![Word8]
-  , cg_pos     :: !Location
-  }
-  deriving (Show)
-
-initCGState :: CGState
-initCGState = CGState [] 0
-
-
-newtype CodeGen a = CodeGen (S.State CGState a)
-  deriving newtype (Functor,Applicative,Monad)
-
-instance Output CodeGen where
-  putW8 b    = CodeGen $ S.modify \s -> s
-                  { cg_bytes = b : cg_bytes s
-                  , cg_pos   = cg_pos s + 1
-                  }
-  getLoc = CodeGen (S.gets cg_pos)
-
-runCodeGen :: CodeGen a -> (a, CGState)
-runCodeGen (CodeGen m) = second fix_state $ S.runState m initCGState
-  where
-    fix_state s = s
-      { cg_bytes  = reverse (cg_bytes s)
-      }
-
-newtype LocImm8  = LocImm8  Location
-newtype LocImm16 = LocImm16 Location
-newtype LocImm32 = LocImm32 Location
-newtype LocImm64 = LocImm64 Location
+newtype LocImm8  = LocImm8  Location deriving (Show,Eq,Ord)
+newtype LocImm16 = LocImm16 Location deriving (Show,Eq,Ord)
+newtype LocImm32 = LocImm32 Location deriving (Show,Eq,Ord)
+newtype LocImm64 = LocImm64 Location deriving (Show,Eq,Ord)
 
 -- | Location of a sign-extended 32-bit value
-newtype LocImm32sx = LocImm32sx Location
+newtype LocImm32sx = LocImm32sx Location deriving (Show,Eq,Ord)
 
 -- | Location of a sign-extended 8-bit value
-newtype LocImm8sx = LocImm8sx Location
+newtype LocImm8sx = LocImm8sx Location deriving (Show,Eq,Ord)
 
-newtype LocDisp8  = LocDisp8  Location
-newtype LocDisp16 = LocDisp16 Location
-newtype LocDisp32 = LocDisp32 Location
+newtype LocDisp8  = LocDisp8  Location deriving (Show,Eq,Ord)
+newtype LocDisp16 = LocDisp16 Location deriving (Show,Eq,Ord)
+newtype LocDisp32 = LocDisp32 Location deriving (Show,Eq,Ord)
 
 -- | Displacement location (optional)
 data LocDispMaybe
@@ -129,10 +104,11 @@ data LocDispMaybe
   | SomeLocDisp8  !LocDisp8
   | SomeLocDisp16 !LocDisp16
   | SomeLocDisp32 !LocDisp32
+  deriving (Show,Eq,Ord)
 
-newtype Disp8  = Disp8  Word8
-newtype Disp16 = Disp16 Word16
-newtype Disp32 = Disp32 Word32
+newtype Disp8  = Disp8  Word8  deriving (Show,Eq,Ord)
+newtype Disp16 = Disp16 Word16 deriving (Show,Eq,Ord)
+newtype Disp32 = Disp32 Word32 deriving (Show,Eq,Ord)
 
 disp8 :: Output m => Disp8 -> m LocDisp8
 disp8 (Disp8 v) = do
@@ -235,7 +211,7 @@ rex :: Output m => Field REX_W -> Field REX_R -> Field REX_X -> Field REX_B -> m
 rex w r x b = case wrxb of
     Absent  -> pure ()
     Default -> pure ()
-    SetTo v -> putW8 (0b0100000 .|. v)
+    SetTo v -> putW8 (0b01000000 .|. v)
   where
     wr = merge2 fromREX_W fromREX_R w r
     xb = merge2 fromREX_X fromREX_B x b
@@ -355,10 +331,10 @@ newtype FieldRM_mem = FieldRM_mem { unFieldRM_mem :: Word3 }
 newtype FieldRM_reg = FieldRM_reg { unFieldRM_reg :: Word3 }
 
 -- | ModRM's RM field contents for a base register
-newtype FieldRM_base = FieldRM_base { unFieldRM_base :: Word3 }
+newtype FieldRM_base = FieldRM_base Word3
 
 -- | Field contents for an index register
-newtype Field_index = Field_index { unField_index :: Word3 }
+newtype Field_index = Field_index Word3
 
 -- | ModRM's Reg field contents for a register
 newtype FieldReg_reg = FieldReg_reg { unFieldReg_reg :: Word3 }
@@ -403,23 +379,6 @@ instance Num Word3 where
   negate _              = error "negate for Word3 not supported"
 
 -- | Assert that a Word8 is on 2 bits
-assertWord2 :: Word8 -> Word2
-assertWord2 w
-  | w .&. 0b11111100 == 0 = Word2 w
-  | otherwise = error $ "assertWord2: number too large (" ++ show w ++ ")"
-
--- | 2-bit word
-newtype Word2 = Word2 { fromWord2 :: Word8 }
-
-instance Num Word2 where
-  fromInteger v         = assertWord2 (fromInteger v)
-  (Word2 a) + (Word2 b) = Word2 ((a+b) .&. 0b11)
-  (Word2 a) * (Word2 b) = Word2 ((a*b) .&. 0b11)
-  abs a                 = a
-  signum (Word2 0)      = Word2 0
-  signum _              = Word2 1
-  negate _              = error "negate for Word2 not supported"
-
 modRM_OpcodeReg :: FieldReg_opcode -> FieldRM_reg -> ModRM
 modRM_OpcodeReg opcode reg = ModRM Mod11 (unFieldReg_opcode opcode) (unFieldRM_reg reg)
 
@@ -490,6 +449,18 @@ pattern RegCode :: RegBits -> RegNum -> RegCode
 pattern RegCode b n <- (extractRegCode -> (b,n))
   where
     RegCode b n = toRegCode b n
+
+pattern RAX :: RegCode
+pattern RAX = RawRegCode 0x00
+
+pattern RCX :: RegCode
+pattern RCX = RawRegCode 0x01
+
+pattern RDX :: RegCode
+pattern RDX = RawRegCode 0x02
+
+pattern RBX :: RegCode
+pattern RBX = RawRegCode 0x03
 
 extractRegCode :: RegCode -> (RegBits, RegNum)
 extractRegCode (RawRegCode w) = (toRegBits w, toRegNum w)
@@ -839,10 +810,3 @@ sibMaybe = \case
 
 sib :: Output m => SIB -> m ()
 sib (RawSIB w) = putW8 w
-
--- ========================================
--- Instructions
--- ========================================
-
--- > runCodeGen $ putADC_AL_imm8 (V 15) >> putADC_AL_imm8 (M "Imm8 marker") >> putADC_AL_imm8 (V 27) >> putADC_AX_imm16 (V 0x0102)
--- ((),CGState {cg_relocs = [RelocImm8 "Imm8 marker" 3], cg_bytes = [20,15,20,0,20,27,102,21,2,1], cg_pos = 10, cg_op_size = DefaultOperandSize32})

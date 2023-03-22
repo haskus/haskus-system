@@ -25,6 +25,7 @@ where
 
 import Haskus.Arch.X86_64.ISA.Ops
 
+-- | Add with carry
 data ADC
   = ADC_AL_i8_      ADC_AL_i8
   | ADC_AX_i16_     ADC_AX_i16
