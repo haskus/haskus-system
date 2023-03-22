@@ -147,6 +147,7 @@ instance Put ADC_AL_i8 where
   type PutResult ADC_AL_i8 = LocImm8
 
   put (ADC_AL_i8 v) = do
+    beginInsn
     oc 0x14
     i8 v
 
@@ -154,6 +155,7 @@ instance Put ADC_AX_i16 where
   type PutResult ADC_AX_i16 = LocImm16
 
   put (ADC_AX_i16 dos v) = do
+    beginInsn
     os16 dos
     oc 0x15
     i16 v
@@ -162,6 +164,7 @@ instance Put ADC_EAX_i32 where
   type PutResult ADC_EAX_i32 = LocImm32
 
   put (ADC_EAX_i32 dos v) = do
+    beginInsn
     os32 dos
     oc 0x15
     i32 v
@@ -170,6 +173,7 @@ instance Put ADC_RAX_i32 where
   type PutResult ADC_RAX_i32 = LocImm32sx
 
   put (ADC_RAX_i32 v) = do
+    beginInsn
     rexW
     oc 0x15
     i32sx v
@@ -178,6 +182,7 @@ instance Put ADC_r8_i8 where
   type PutResult ADC_r8_i8 = LocImm8
 
   put (ADC_r8_i8 (regRM -> (b,r)) v) = do
+    beginInsn
     rex W R X b
     oc 0x80
     ocxReg 2 r
@@ -187,6 +192,7 @@ instance Put ADC_r16_i16 where
   type PutResult ADC_r16_i16 = LocImm16
 
   put (ADC_r16_i16 dos (regRM -> (b,r)) v) = do
+    beginInsn
     os16 dos
     rex W R X b
     oc 0x81
@@ -197,6 +203,7 @@ instance Put ADC_r32_i32 where
   type PutResult ADC_r32_i32 = LocImm32
 
   put (ADC_r32_i32 dos (regRM -> (b,r)) v) = do
+    beginInsn
     os32 dos
     rex W R X b
     oc 0x81
@@ -207,6 +214,7 @@ instance Put ADC_r64_i32 where
   type PutResult ADC_r64_i32 = LocImm32sx
 
   put (ADC_r64_i32 (regRM -> (b,r)) v) = do
+    beginInsn
     rex W1 R X b
     oc 0x81
     ocxReg 2 r
@@ -216,6 +224,7 @@ instance Put ADC_r16_i8 where
   type PutResult ADC_r16_i8 = LocImm8sx
 
   put (ADC_r16_i8 dos (regRM -> (b,r)) v) = do
+    beginInsn
     os16 dos
     rex W R X b
     oc 0x83
@@ -226,6 +235,7 @@ instance Put ADC_r32_i8 where
   type PutResult ADC_r32_i8 = LocImm8sx
 
   put (ADC_r32_i8 dos (regRM -> (b,r)) v) = do
+    beginInsn
     os32 dos
     rex W R X b
     oc 0x83
@@ -236,6 +246,7 @@ instance Put ADC_r64_i8 where
   type PutResult ADC_r64_i8 = LocImm8sx
 
   put (ADC_r64_i8 (regRM -> (b,r)) v) = do
+    beginInsn
     rex W1 R X b
     oc 0x83
     ocxReg 2 r
@@ -245,6 +256,7 @@ instance Put ADC_r8_r8 where
   type PutResult ADC_r8_r8 = ()
 
   put (ADC_r8_r8 dst src rev) = do
+    beginInsn
     let (r, b, modrm, o) = revRegs rev 0x10 dst src
     rex W r X b
     oc o
@@ -254,6 +266,7 @@ instance Put ADC_r16_r16 where
   type PutResult ADC_r16_r16 = ()
 
   put (ADC_r16_r16 dos dst src rev) = do
+    beginInsn
     let (r, b, modrm, o) = revRegs rev 0x11 dst src
     os16 dos
     rex W r X b
@@ -264,6 +277,7 @@ instance Put ADC_r32_r32 where
   type PutResult ADC_r32_r32 = ()
 
   put (ADC_r32_r32 dos dst src rev) = do
+    beginInsn
     let (r, b, modrm, o) = revRegs rev 0x11 dst src
     os32 dos
     rex W r X b
@@ -274,6 +288,7 @@ instance Put ADC_r64_r64 where
   type PutResult ADC_r64_r64 = ()
 
   put (ADC_r64_r64 dst src rev) = do
+    beginInsn
     let (r, b, modrm, o) = revRegs rev 0x11 dst src
     rex W1 r X b
     oc o
@@ -283,6 +298,7 @@ instance Put ADC_m8_i8 where
   type PutResult ADC_m8_i8 = (LocDispMaybe, LocImm8)
 
   put (ADC_m8_i8 lock m v) = do
+    beginInsn
     let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
     lockMaybe lock
     segMaybe mseg
@@ -291,7 +307,7 @@ instance Put ADC_m8_i8 where
     oc 0x80
     ocxMem 2 m_mod m_rm
     sibMaybe msib
-    loc_disp <- dispMaybe disp
+    loc_disp <- dispMaybe 1 disp
     loc_imm <- i8 v
     pure (loc_disp, loc_imm)
 
@@ -299,6 +315,7 @@ instance Put ADC_m16_i16 where
   type PutResult ADC_m16_i16 = (LocDispMaybe, LocImm16)
 
   put (ADC_m16_i16 dos lock m v) = do
+    beginInsn
     let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
     lockMaybe lock
     segMaybe mseg
@@ -308,7 +325,7 @@ instance Put ADC_m16_i16 where
     oc 0x81
     ocxMem 2 m_mod m_rm
     sibMaybe msib
-    loc_disp <- dispMaybe disp
+    loc_disp <- dispMaybe 2 disp
     loc_imm <- i16 v
     pure (loc_disp, loc_imm)
 
@@ -316,6 +333,7 @@ instance Put ADC_m32_i32 where
   type PutResult ADC_m32_i32 = (LocDispMaybe, LocImm32)
 
   put (ADC_m32_i32 dos lock m v) = do
+    beginInsn
     let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
     lockMaybe lock
     segMaybe mseg
@@ -325,7 +343,7 @@ instance Put ADC_m32_i32 where
     oc 0x81
     ocxMem 2 m_mod m_rm
     sibMaybe msib
-    loc_disp <- dispMaybe disp
+    loc_disp <- dispMaybe 4 disp
     loc_imm <- i32 v
     pure (loc_disp, loc_imm)
 
@@ -333,6 +351,7 @@ instance Put ADC_m64_i32sx where
   type PutResult ADC_m64_i32sx = (LocDispMaybe, LocImm32sx)
 
   put (ADC_m64_i32sx lock m v) = do
+    beginInsn
     let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
     lockMaybe lock
     segMaybe mseg
@@ -341,7 +360,7 @@ instance Put ADC_m64_i32sx where
     oc 0x81
     ocxMem 2 m_mod m_rm
     sibMaybe msib
-    loc_disp <- dispMaybe disp
+    loc_disp <- dispMaybe 4 disp
     loc_imm <- i32sx v
     pure (loc_disp, loc_imm)
 

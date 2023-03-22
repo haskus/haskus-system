@@ -26,6 +26,12 @@ class Monad m => Output m where
   -- | Return current location (number of bytes already written)
   getLoc :: m Location
 
+  -- | Return instruction size up to now
+  getInsnSize :: m Word8
+
+  -- | Start a new instruction (reset instruction size counter)
+  beginInsn :: m ()
+
 -- | Output a 16-bit word
 putW16 :: Output m => Word16 -> m ()
 putW16 v = do

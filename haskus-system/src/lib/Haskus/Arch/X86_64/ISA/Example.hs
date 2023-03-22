@@ -23,11 +23,16 @@ newtype CodeGen a = CodeGen (S.State CGState a)
 data CGState = CGState
   { cg_bytes   :: ![Word8]
   , cg_pos     :: !Location
+  , cg_begin   :: !Location
   }
   deriving (Show)
 
 initCGState :: CGState
-initCGState = CGState [] 0
+initCGState = CGState
+  { cg_bytes = []
+  , cg_pos   = 0
+  , cg_begin = 0
+  }
 
 
 instance Output CodeGen where
@@ -35,7 +40,14 @@ instance Output CodeGen where
                   { cg_bytes = b : cg_bytes s
                   , cg_pos   = cg_pos s + 1
                   }
-  getLoc = CodeGen (S.gets cg_pos)
+  getLoc     = CodeGen (S.gets cg_pos)
+  getInsnSize = CodeGen $ do
+    orig <- S.gets cg_begin
+    end  <- S.gets cg_pos
+    pure (fromIntegral (end - orig))
+  beginInsn  = CodeGen (S.modify \s -> s { cg_begin = cg_pos s })
+
+
 
 runCodeGen :: CodeGen a -> (a, CGState)
 runCodeGen (CodeGen m) = second fix_state $ S.runState m initCGState
@@ -43,6 +55,10 @@ runCodeGen (CodeGen m) = second fix_state $ S.runState m initCGState
     fix_state s = s
       { cg_bytes  = reverse (cg_bytes s)
       }
+
+data Labeled l a
+  = Labeled l a
+  deriving (Show,Eq,Ord)
 
 example :: IO ()
 example = do
@@ -56,7 +72,14 @@ example = do
         put $ ADC_r32_r32 defOpSize RAX RBX rev_bit
         put $ ADC_r64_r64 RAX RBX rev_bit
         put $ ADC_r64_r64 RAX RBX ReverseBit1
-        pure (r1,r2,r3)
+        let addr = Addr (RIPRelative (Disp32 0x7700)) (Just CS) Nothing
+        r4 <- put $ ADC_m32_i32 defOpSize NoLock addr 0x12345678
+        put $ ADC_r64_r64 RAX RBX rev_bit
+        pure ( Labeled "Some_reloc" r1
+             , Labeled "some_other_reloc" r2
+             , Labeled "and_another_one" r3
+             , r4
+             )
 
   print r
   void $ withTempFile \fp -> do

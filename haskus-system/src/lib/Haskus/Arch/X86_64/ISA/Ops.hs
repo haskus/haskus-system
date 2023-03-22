@@ -13,7 +13,12 @@ module Haskus.Arch.X86_64.ISA.Ops
   ( Lock (..)
   , Addr (..)
   , Addr64 (..)
+  , AddrSize (..)
   , BSID (..)
+  , Disp8 (..)
+  , Disp16 (..)
+  , Disp32 (..)
+  , Segment (..)
   , LocImm8 (..)
   , LocImm8sx (..)
   , LocImm16 (..)
@@ -98,12 +103,17 @@ newtype LocDisp8  = LocDisp8  Location deriving (Show,Eq,Ord)
 newtype LocDisp16 = LocDisp16 Location deriving (Show,Eq,Ord)
 newtype LocDisp32 = LocDisp32 Location deriving (Show,Eq,Ord)
 
+newtype InsnSize
+  = InsnSize Word8
+  deriving (Show,Eq,Ord)
+
 -- | Displacement location (optional)
 data LocDispMaybe
   = NoLocDisp
-  | SomeLocDisp8  !LocDisp8
-  | SomeLocDisp16 !LocDisp16
-  | SomeLocDisp32 !LocDisp32
+  | SomeLocDisp8     !LocDisp8
+  | SomeLocDisp16    !LocDisp16
+  | SomeLocDisp32    !LocDisp32
+  | SomeLocRelDisp32 !InsnSize !LocDisp32 -- ^ Insn size and location is (original disp - insn size)
   deriving (Show,Eq,Ord)
 
 newtype Disp8  = Disp8  Word8  deriving (Show,Eq,Ord)
@@ -131,16 +141,27 @@ disp32 (Disp32 v) = do
 -- | Displacement (optional)
 data DispMaybe
   = NoDisp
-  | SomeDisp8  !Disp8
-  | SomeDisp16 !Disp16
-  | SomeDisp32 !Disp32
+  | SomeDisp8     !Disp8
+  | SomeDisp16    !Disp16
+  | SomeDisp32    !Disp32
+  | SomeRelDisp32 !Disp32
 
-dispMaybe :: Output m => DispMaybe -> m LocDispMaybe
-dispMaybe = \case
-  NoDisp      -> pure NoLocDisp
-  SomeDisp8  d -> SomeLocDisp8  <$> disp8 d
-  SomeDisp16 d -> SomeLocDisp16 <$> disp16 d
-  SomeDisp32 d -> SomeLocDisp32 <$> disp32 d
+-- | Put displacement (if any)
+--
+-- The first argument is the size of the rest of the instruction (typically
+-- immediate bytes). This is used to compute PC-relative addresses.
+dispMaybe :: Output m => Word8 -> DispMaybe -> m LocDispMaybe
+dispMaybe following_bytes = \case
+  NoDisp                   -> pure NoLocDisp
+  SomeDisp8  d             -> SomeLocDisp8         <$> disp8 d
+  SomeDisp16 d             -> SomeLocDisp16        <$> disp16 d
+  SomeDisp32 d             -> SomeLocDisp32        <$> disp32 d
+  SomeRelDisp32 (Disp32 d) -> do
+    -- take into account the following bytes and the 4 bytes we dump
+    isz <- getInsnSize
+    let sz = isz + fromIntegral following_bytes + 4
+    let insn_size = InsnSize sz
+    SomeLocRelDisp32 insn_size <$> disp32 (Disp32 (d-fromIntegral sz))
 
 -- | Enable 64-bit operand size (REX.W)
 rexW :: Output m => m ()
@@ -649,7 +670,7 @@ computeAddr64Fields = \case
     -> ( MemMod00
        , FieldRM_mem 0b101
        , Nothing
-       , SomeDisp32 d32
+       , SomeRelDisp32 d32
        , Default
        , Default
        )
