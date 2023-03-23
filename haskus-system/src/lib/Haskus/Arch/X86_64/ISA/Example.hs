@@ -74,11 +74,19 @@ example = do
         put $ ADC_r64_r64 RAX RBX ReverseBit1
         let addr = Addr (RIPRelative (Disp32 0x7700)) (Just CS) Nothing
         r4 <- put $ ADC_m32_i32 defOpSize NoLock addr 0x12345678
+        r5 <- put $ ADC_m32_r32 defOpSize NoLock addr RCX
+        r6 <- put $ ADC_m64_r64 NoLock addr RCX
+        r7 <- put $ ADC_m64_r64 Lock addr RCX
+        r8 <- put $ ADC_r64_m64 RAX addr
         put $ ADC_r64_r64 RAX RBX rev_bit
         pure ( Labeled "Some_reloc" r1
              , Labeled "some_other_reloc" r2
              , Labeled "and_another_one" r3
              , r4
+             , r5
+             , r6
+             , r7
+             , r8
              )
 
   print r

@@ -59,6 +59,7 @@ module Haskus.Arch.X86_64.ISA.Ops
   , pattern B1
   , ocxReg
   , ocxMem
+  , regMem
   , revRegs
   , putModRM
   , addrFields
@@ -88,6 +89,14 @@ module Haskus.Arch.X86_64.ISA.Ops
   , gen_m16_i16
   , gen_m32_i32
   , gen_m64_i32sx
+  , gen_m8_r8
+  , gen_m16_r16
+  , gen_m32_r32
+  , gen_m64_r64
+  , gen_r8_m8
+  , gen_r16_m16
+  , gen_r32_m32
+  , gen_r64_m64
   , module Haskus.Arch.X86_64.ISA.Put
   , module Haskus.Arch.X86_64.ISA.Output
   , module Haskus.Arch.X86_64.ISA.Asm
@@ -435,8 +444,18 @@ ocxReg ext reg = putModRM (modRM_OpcodeReg (FieldReg_opcode ext) reg)
 ocxMem :: Output m => Word3 -> MemMod -> FieldRM_mem -> m ()
 ocxMem ext md rm = putModRM (modRM_OpcodeMem (FieldReg_opcode ext) md rm)
 
+-- | Put register and address as arguments
+--
+-- Register and address are stored in ModRM.{reg,rm} respectively.
+regMem :: Output m => FieldReg_reg -> MemMod -> FieldRM_mem -> m ()
+regMem reg md rm = putModRM (modRM_RegMem reg md rm)
+
 modRM_RegReg :: FieldReg_reg -> FieldRM_reg -> ModRM
 modRM_RegReg reg1 reg2 = ModRM Mod11 (unFieldReg_reg reg1) (unFieldRM_reg reg2)
+
+modRM_RegMem :: FieldReg_reg -> MemMod -> FieldRM_mem -> ModRM
+modRM_RegMem reg m_mod m_rm
+  = ModRM (memModToMod m_mod) (unFieldReg_reg reg) (unFieldRM_mem m_rm)
 
 modRM_OpcodeMem :: FieldReg_opcode -> MemMod -> FieldRM_mem -> ModRM
 modRM_OpcodeMem opcode m_mod m_rm
@@ -1034,3 +1053,80 @@ gen_m64_i32sx opc opx lock m v = do
   loc_disp <- dispMaybe 4 disp
   loc_imm <- i32sx v
   pure (loc_disp, loc_imm)
+
+gen_m8_r8 :: Output m => Word8 -> Lock -> Addr -> RegCode -> m LocDispMaybe
+gen_m8_r8 opc lock m rc = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  let (r,m_reg) = encodeFieldReg_reg rc
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  rex W r x b
+  oc opc
+  regMem m_reg m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 0 disp
+  pure loc_disp
+
+gen_m16_r16 :: Output m => Word8 -> DefaultOperandSize -> Lock -> Addr -> RegCode -> m LocDispMaybe
+gen_m16_r16 opc dos lock m rc = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  let (r,m_reg) = encodeFieldReg_reg rc
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  os16 dos
+  rex W r x b
+  oc opc
+  regMem m_reg m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 0 disp
+  pure loc_disp
+
+gen_m32_r32 :: Output m => Word8 -> DefaultOperandSize -> Lock -> Addr -> RegCode -> m LocDispMaybe
+gen_m32_r32 opc dos lock m rc = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  let (r,m_reg) = encodeFieldReg_reg rc
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  os32 dos
+  rex W r x b
+  oc opc
+  regMem m_reg m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 0 disp
+  pure loc_disp
+
+gen_m64_r64 :: Output m => Word8 -> Lock -> Addr -> RegCode -> m LocDispMaybe
+gen_m64_r64 opc lock m rc = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  let (r,m_reg) = encodeFieldReg_reg rc
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  rex W1 r x b
+  oc opc
+  regMem m_reg m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 0 disp
+  pure loc_disp
+
+-- gen_rX_mX are encoded just like gen_mX_rX but they don't accept LOCK prefix.
+
+gen_r8_m8 :: Output m => Word8 -> RegCode -> Addr -> m LocDispMaybe
+gen_r8_m8 opc rc m = gen_m8_r8 opc NoLock m rc
+
+gen_r16_m16 :: Output m => Word8 -> DefaultOperandSize -> RegCode -> Addr -> m LocDispMaybe
+gen_r16_m16 opc dos rc m = gen_m16_r16 opc dos NoLock m rc
+
+gen_r32_m32 :: Output m => Word8 -> DefaultOperandSize -> RegCode -> Addr -> m LocDispMaybe
+gen_r32_m32 opc dos rc m = gen_m32_r32 opc dos NoLock m rc
+
+gen_r64_m64 :: Output m => Word8 -> RegCode -> Addr -> m LocDispMaybe
+gen_r64_m64 opc rc m = gen_m64_r64 opc NoLock m rc
+
