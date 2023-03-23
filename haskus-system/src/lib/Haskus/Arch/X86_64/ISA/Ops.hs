@@ -14,6 +14,8 @@ module Haskus.Arch.X86_64.ISA.Ops
   , Addr (..)
   , Addr64 (..)
   , AddrSize (..)
+  , Scale (..)
+  , EADisp (..)
   , BSID (..)
   , Disp8 (..)
   , Disp16 (..)

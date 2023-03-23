@@ -80,6 +80,9 @@ example = do
         r8 <- put $ ADC_r64_m64 RAX addr
         r9 <- put $ ADC_m16_i8 defOpSize NoLock addr 0x77
         put $ ADC_r64_r64 RAX RBX rev_bit
+        let bsid = BSID (Just RDX) (Just RAX) Scale4 (Just (EADisp8 (Disp8 0x33)))
+        let addr2 = Addr (BaseScaledIndexDisp bsid) Nothing Nothing
+        _ <- put $ ADC_m64_i8 NoLock addr2 0x69
         pure ( Labeled "Some_reloc" r1
              , Labeled "some_other_reloc" r2
              , Labeled "and_another_one" r3
