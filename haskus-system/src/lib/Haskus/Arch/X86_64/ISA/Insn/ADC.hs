@@ -19,7 +19,10 @@ module Haskus.Arch.X86_64.ISA.Insn.ADC
   , ADC_m8_i8 (..)
   , ADC_m16_i16 (..)
   , ADC_m32_i32 (..)
-  , ADC_m64_i32sx (..)
+  , ADC_m64_i32 (..)
+  , ADC_m16_i8 (..)
+  , ADC_m32_i8 (..)
+  , ADC_m64_i8 (..)
   , ADC_r8_m8 (..)
   , ADC_r16_m16 (..)
   , ADC_r32_m32 (..)
@@ -53,7 +56,10 @@ data ADC
   | ADC_m8_i8_      ADC_m8_i8
   | ADC_m16_i16_    ADC_m16_i16
   | ADC_m32_i32_    ADC_m32_i32
-  | ADC_m64_i32sx_  ADC_m64_i32sx
+  | ADC_m64_i32_    ADC_m64_i32
+  | ADC_m16_i8_     ADC_m16_i8
+  | ADC_m32_i8_     ADC_m32_i8
+  | ADC_m64_i8_     ADC_m64_i8
   | ADC_r8_m8_      ADC_r8_m8
   | ADC_r16_m16_    ADC_r16_m16
   | ADC_r32_m32_    ADC_r32_m32
@@ -150,11 +156,35 @@ data ADC_m32_i32 = ADC_m32_i32
   }
 
 -- | Add imm32sx to mem64 + CF
-data ADC_m64_i32sx = ADC_m64_i32sx
-  { adc_m64_i32sx_lock :: !Lock
-  , adc_m64_i32sx_dst  :: !Addr
-  , adc_m64_i32sx_src  :: !Word32
+data ADC_m64_i32 = ADC_m64_i32
+  { adc_m64_i32_lock :: !Lock
+  , adc_m64_i32_dst  :: !Addr
+  , adc_m64_i32_src  :: !Word32
   }
+
+-- | Add imm8sx to mem16 + CF
+data ADC_m16_i8 = ADC_m16_i8
+  { adc_m16_i8_dos  :: !DefaultOperandSize
+  , adc_m16_i8_lock :: !Lock
+  , adc_m16_i8_dst  :: !Addr
+  , adc_m16_i8_src  :: !Word8
+  }
+
+-- | Add imm8sx to mem32 + CF
+data ADC_m32_i8 = ADC_m32_i8
+  { adc_m32_i8_dos  :: !DefaultOperandSize
+  , adc_m32_i8_lock :: !Lock
+  , adc_m32_i8_dst  :: !Addr
+  , adc_m32_i8_src  :: !Word8
+  }
+
+-- | Add imm8sx to mem64 + CF
+data ADC_m64_i8 = ADC_m64_i8
+  { adc_m64_i8_lock :: !Lock
+  , adc_m64_i8_dst  :: !Addr
+  , adc_m64_i8_src  :: !Word8
+  }
+
 
 -- | Add reg8 to mem8 + CF
 data ADC_m8_r8 = ADC_m8_r8
@@ -287,9 +317,22 @@ instance Put ADC_m32_i32 where
   type PutResult ADC_m32_i32     = (LocDispMaybe, LocImm32)
   put (ADC_m32_i32 dos lock m v) = gen_m32_i32 0x81 2 dos lock m v
 
-instance Put ADC_m64_i32sx where
-  type PutResult ADC_m64_i32sx   = (LocDispMaybe, LocImm32sx)
-  put (ADC_m64_i32sx lock m v)   = gen_m64_i32sx 0x81 2 lock m v
+instance Put ADC_m64_i32 where
+  type PutResult ADC_m64_i32     = (LocDispMaybe, LocImm32sx)
+  put (ADC_m64_i32 lock m v)     = gen_m64_i32sx 0x81 2 lock m v
+
+instance Put ADC_m16_i8 where
+  type PutResult ADC_m16_i8      = (LocDispMaybe, LocImm8sx)
+  put (ADC_m16_i8 dos lock m v)  = gen_m16_i8sx 0x83 2 dos lock m v
+
+instance Put ADC_m32_i8 where
+  type PutResult ADC_m32_i8      = (LocDispMaybe, LocImm8sx)
+  put (ADC_m32_i8 dos lock m v)  = gen_m32_i8sx 0x83 2 dos lock m v
+
+instance Put ADC_m64_i8 where
+  type PutResult ADC_m64_i8      = (LocDispMaybe, LocImm8sx)
+  put (ADC_m64_i8 lock m v)      = gen_m64_i8sx 0x83 2 lock m v
+
 
 instance Put ADC_m8_r8 where
   type PutResult ADC_m8_r8       = LocDispMaybe

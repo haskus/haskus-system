@@ -78,6 +78,7 @@ example = do
         r6 <- put $ ADC_m64_r64 NoLock addr RCX
         r7 <- put $ ADC_m64_r64 Lock addr RCX
         r8 <- put $ ADC_r64_m64 RAX addr
+        r9 <- put $ ADC_m16_i8 defOpSize NoLock addr 0x77
         put $ ADC_r64_r64 RAX RBX rev_bit
         pure ( Labeled "Some_reloc" r1
              , Labeled "some_other_reloc" r2
@@ -87,6 +88,7 @@ example = do
              , r6
              , r7
              , r8
+             , r9
              )
 
   print r

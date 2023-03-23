@@ -89,6 +89,9 @@ module Haskus.Arch.X86_64.ISA.Ops
   , gen_m16_i16
   , gen_m32_i32
   , gen_m64_i32sx
+  , gen_m16_i8sx
+  , gen_m32_i8sx
+  , gen_m64_i8sx
   , gen_m8_r8
   , gen_m16_r16
   , gen_m32_r32
@@ -1052,6 +1055,53 @@ gen_m64_i32sx opc opx lock m v = do
   sibMaybe msib
   loc_disp <- dispMaybe 4 disp
   loc_imm <- i32sx v
+  pure (loc_disp, loc_imm)
+
+gen_m16_i8sx :: Output m => Word8 -> Word3 -> DefaultOperandSize -> Lock -> Addr -> Word8 -> m (LocDispMaybe, LocImm8sx)
+gen_m16_i8sx opc opx dos lock m v = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  os16 dos
+  rex W R x b
+  oc opc
+  ocxMem opx m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 1 disp
+  loc_imm <- i8sx v
+  pure (loc_disp, loc_imm)
+
+gen_m32_i8sx :: Output m => Word8 -> Word3 -> DefaultOperandSize -> Lock -> Addr -> Word8 -> m (LocDispMaybe, LocImm8sx)
+gen_m32_i8sx opc opx dos lock m v = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  os32 dos
+  rex W R x b
+  oc opc
+  ocxMem opx m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 1 disp
+  loc_imm <- i8sx v
+  pure (loc_disp, loc_imm)
+
+gen_m64_i8sx :: Output m => Word8 -> Word3 -> Lock -> Addr -> Word8 -> m (LocDispMaybe, LocImm8sx)
+gen_m64_i8sx opc opx lock m v = do
+  beginInsn
+  let (mseg, masize, m_mod, m_rm, msib, disp, x, b) = addrFields m
+  lockMaybe lock
+  segMaybe mseg
+  addrSizeMaybe masize
+  rex W1 R x b
+  oc opc
+  ocxMem opx m_mod m_rm
+  sibMaybe msib
+  loc_disp <- dispMaybe 1 disp
+  loc_imm <- i8sx v
   pure (loc_disp, loc_imm)
 
 gen_m8_r8 :: Output m => Word8 -> Lock -> Addr -> RegCode -> m LocDispMaybe
