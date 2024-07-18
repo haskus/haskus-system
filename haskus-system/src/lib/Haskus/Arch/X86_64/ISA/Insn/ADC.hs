@@ -333,7 +333,6 @@ instance Put ADC_m64_i8 where
   type PutResult ADC_m64_i8      = (LocDispMaybe, LocImm8sx)
   put (ADC_m64_i8 lock m v)      = gen_m64_i8sx 0x83 2 lock m v
 
-
 instance Put ADC_m8_r8 where
   type PutResult ADC_m8_r8       = LocDispMaybe
   put (ADC_m8_r8 lock m r)       = gen_m8_r8 0x10 lock m r
